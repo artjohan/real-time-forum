@@ -1,0 +1,128 @@
+body {
+    background-color: rgb(174, 192, 192);
+    font-family: CerebriSans-Regular,-apple-system,system-ui,Roboto,sans-serif;
+}
+
+.subbox {
+    border-radius: 5px;
+    border: 2px solid #2b51837a;
+    background-color: rgb(125, 153, 196);
+    padding: 5px;
+    margin: 3px;
+    height:auto;
+    text-align: center;
+}
+
+.threadbox {
+    border-radius: 5px;
+    border: 2px solid #2b51837a;
+    background-color: rgb(125, 153, 196);
+    padding: 30px;
+    margin-bottom: 27px;
+    display: flex;
+    height: auto;
+}
+
+.title {
+    float: left;
+    text-align: left;
+    height: 50px;
+    position: relative;
+    top: 0px;
+    flex-basis: 50%;
+}
+
+.threadcats {
+    text-align: center;
+    flex-basis: 20%;
+}
+
+.threadinfo {
+    text-align: center;
+    flex-basis: 20%;
+}
+
+.postbox {
+    border-radius: 5px;
+    border: 2px solid #2b51837a;
+    background-color: rgb(125, 153, 196);
+    padding: 30px;
+    margin-bottom: 27px;
+    display: flex;
+    height: auto;
+}
+
+.postinfobox {
+    border: solid black;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: rgb(0, 204, 255);
+    flex-basis: 10%;
+    font-size: 20px;
+    border: 2px solid #1f276d54;
+}
+
+.reactionbox {
+    text-align: center;
+    flex-basis: 20%;
+    font-size: 15px;
+    margin-top: 30px;
+}
+
+.reactionbtn {
+    background-color: transparent;
+    background-repeat: no-repeat;
+    border: none;
+    cursor: pointer;
+    overflow: hidden;
+    outline: none;
+    height: 50px;
+    font-size: 30px;
+}
+
+.postcontent {
+    flex-basis: 70%;
+    font-size: 20px;
+    text-align: left;
+    margin-left: 20px;
+    margin-right: 20px;
+    white-space: pre-line;
+    display: block;
+}
+
+.header {
+    background-color: rgb(125, 153, 196);
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.inputbox {
+    border: #7a7fc0 solid 2px;
+    background-color: #c2e6fb;
+    border-radius: 5px;
+    height: 30px;
+}
+
+.button-33 {
+  background-color: #c2e6fb;
+  border-radius: 100px;
+  box-shadow: rgba(44, 187, 99, .2) 0 -25px 18px -14px inset,rgba(44, 187, 99, .15) 0 1px 2px,rgba(44, 187, 99, .15) 0 2px 4px,rgba(44, 187, 99, .15) 0 4px 8px,rgba(44, 187, 99, .15) 0 8px 16px,rgba(44, 187, 99, .15) 0 16px 32px;
+  color: rgb(0, 19, 128);
+  cursor: pointer;
+  display: inline-block;
+  font-family: CerebriSans-Regular,-apple-system,system-ui,Roboto,sans-serif;
+  padding: 7px 20px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 250ms;
+  border: 0;
+  font-size: 16px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.button-33:hover {
+  box-shadow: rgba(44,187,99,.35) 0 -25px 18px -14px inset,rgba(44,187,99,.25) 0 1px 2px,rgba(44,187,99,.25) 0 2px 4px,rgba(44,187,99,.25) 0 4px 8px,rgba(44,187,99,.25) 0 8px 16px,rgba(44,187,99,.25) 0 16px 32px;
+  transform: scale(1.05) rotate(-1deg);
+}
