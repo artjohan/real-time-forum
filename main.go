@@ -14,6 +14,9 @@ func main() {
 	src.Init()
 	http.Handle("/static/", http.StripPrefix("/static", fileServer))
 	http.HandleFunc("/", src.HomePageHandler)
+	http.HandleFunc("/post-register", src.RegisterHandler)
+	http.HandleFunc("/post-login", src.LoginHandler)
+	http.HandleFunc("/get-cookie", src.CookieHandler)
 	portNr := getPortNr()
 	fmt.Printf("Started server at http://localhost:%v\n", portNr)
 	// runs server

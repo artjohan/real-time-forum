@@ -13,35 +13,71 @@ export default async function() {
             <header style="font-size: 65px;">Registration</header>
         </div><br>
         <form id="registerForm">
-            <input class="inputbox" id="username" pattern="[A-Za-z\d\-_\.]+" title="Invalid characters detected" placeholder="Username" maxlength="15" minlength="3" required></input><br><br>
-            <input class="inputbox" id="email" placeholder="Email" type="email" required minlength="6"></input><br><br>
-            <input class="inputbox" id="firstName" placeholder="First Name" type="text" required minlength="1"></input><br><br>
-            <input class="inputbox" id="lastName" placeholder="Last Name" type="text" required minlength="1"></input><br><br>
-            <input class="inputbox" id="age" placeholder="Age" type="number" required minvalue="1" maxvalue="116"></input><br><br>
-            <input class="inputbox" id="password" placeholder="Password (6 characters)" type="password" id="password" maxlength="20" minlength="6" required></input><br><br>
+            <input class="inputbox" name="nickname" pattern="[A-Za-z\d\-_\.]+" title="Invalid characters detected" placeholder="Nickname" maxlength="15" minlength="3" required></input><br><br>
+            <input class="inputbox" name="email" placeholder="Email" type="email" required minlength="6"></input><br><br>
+            <input class="inputbox" name="firstName" placeholder="First Name" type="text" required minlength="1"></input><br><br>
+            <input class="inputbox" name="lastName" placeholder="Last Name" type="text" required minlength="1"></input><br><br>
+            <input class="inputbox" name="age" placeholder="Age" type="number" required minvalue="1" maxvalue="116"></input><br><br>
+            <select class="inputbox" name="gender" placeholder="Gender" required>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+            </select><br><br>
+            <input class="inputbox" name="password" placeholder="Password (6 characters)" type="password" id="password" maxlength="20" minlength="6" required></input><br><br>
             <input class="inputbox" type="password" placeholder="Confirm Password" id="confirmPassword" maxlength="20" minlength="6" required></input><br><br>
-            <button id="registerBtn" class="button-33">Register</button>
+            <button type="submit" class="button-33">Register</button>
         </form>
     </div>
     </body>
     </html>
     `
+    const registerData = {}
+    const registerForm = document.getElementById("registerForm")
 
-    document.getElementById("registerBtn").addEventListener("click", (event) => {
+    var password = document.getElementById("password")
+    var confirmPassword = document.getElementById("confirmPassword")
+
+    confirmPassword.addEventListener("input", function() {
+        if(password.value != confirmPassword.value) {
+            confirmPassword.setCustomValidity("Passwords Don't Match")
+        } else {
+            confirmPassword.setCustomValidity('')
+        }
+    })
+
+    registerForm.addEventListener("submit", async (event) => {
         event.preventDefault()
-        console.log("yes")
+        var formData = new FormData(registerForm)
+
+        for (var [key, value] of formData.entries()) {
+            if(key === "age") {
+                value = parseInt(value)
+            }
+            registerData[key] = value
+        }
+
+        const options = {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(registerData)
+        }
+        try {
+            const response = await fetch("/post-register", options)
+            handleResponse(response)
+        } catch (error) {
+            console.error(error)
+        }
     })
 }
 
-
-    
-function validatePassword(password, confirmPassword){
-    console.log(password.value)
-    if(password.value != confirmPassword.value) {
-        console.log("no match")
-        confirmPassword.setCustomValidity("Passwords Don't Match")
+const handleResponse = async (response) => {
+    if(response.ok) {
+        window.location.href = "/login"
     } else {
-        confirmPassword.setCustomValidity('')
+        const statusMsg = await response.text()
+        console.log(statusMsg)
     }
 }
     

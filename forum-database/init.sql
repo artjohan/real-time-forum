@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS users (
-	userId TEXT NOT NULL,
-	username TEXT NOT NULL,
+	userId INTEGER PRIMARY KEY AUTOINCREMENT,
+	nickname TEXT NOT NULL,
     age INTEGER,
     gender TEXT NOT NULL,
     firstName TEXT NOT NULL,
     lastName TEXT NOT NULL,
 	email TEXT NOT NULL,
 	password TEXT NOT NULL,
-	status TEXT NOT NULL
+	online BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS posts (
