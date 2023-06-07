@@ -1,3 +1,5 @@
+import { navigateTo } from "./helpers.js"
+
 export default async function() {
     document.querySelector("#app").innerHTML = `
     <div style="text-align: center;">
@@ -10,7 +12,7 @@ export default async function() {
         <button class="button-33" type="submit">Log in</button><br><br>
     </form>
     <a>Don't have an account? Register</a>
-    <a href="/register"> here</a>
+    <a href="/register" data-link> here</a>
     </div>
     `
 
@@ -45,25 +47,26 @@ const handleResponse = async (response) => {
     if(response.ok) {
         const data = await response.json()
         localStorage.setItem("userData", JSON.stringify(data))
-        window.location.href = "/"
+        navigateTo("/")
     } else {
         const statusMsg = await response.text()
         console.log(statusMsg)
     }
 }
 
-export const getCookie = (userId) => {
-    const url = `/get-cookie?userId=${userId}`
-    fetch(url)
-      .then(response => {
-        if (response.ok) {
-            console.log("Session exists")
+export const hasCookie = async (cookieId) => {
+    try {
+        const url = `/get-cookie?cookieId=${cookieId}`;
+        const response = await fetch(url);
+        if(response.ok) {
+            return true
         } else {
-            console.log("Session does not exist")
+            return false
         }
-      })
-      .catch(error => {
-        console.error("Error:", error)
-      });
-  }
+    } catch (error) {
+        console.error("Error:", error);
+        return false;
+    }
+    
+}
   

@@ -29,6 +29,7 @@ body {
     height: 50px;
     position: relative;
     top: 0px;
+    overflow-wrap: break-word;
     flex-basis: 50%;
 }
 

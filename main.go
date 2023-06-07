@@ -17,6 +17,12 @@ func main() {
 	http.HandleFunc("/post-register", src.RegisterHandler)
 	http.HandleFunc("/post-login", src.LoginHandler)
 	http.HandleFunc("/get-cookie", src.CookieHandler)
+	http.HandleFunc("/post-logout", src.LogOutHandler)
+	http.HandleFunc("/create-post", src.CreatePostHandler)
+	http.HandleFunc("/get-posts", src.GetPostsHandler)
+	http.HandleFunc("/create-comment", src.CreateCommentHandler)
+	http.HandleFunc("/get-post-details", src.GetPostDetailsHandler)
+	http.HandleFunc("/post-reaction", src.ReactionHandler)
 	portNr := getPortNr()
 	fmt.Printf("Started server at http://localhost:%v\n", portNr)
 	// runs server

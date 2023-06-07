@@ -18,7 +18,8 @@ type LoginInfo struct {
 
 type LoginResponse struct {
 	Nickname string `json:"nickname"`
-	UserID   int    `json:"userId"`
+	UserId   int    `json:"userId"`
+	CookieId string `json:"cookieId"`
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +57,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var nickname string
 	row.Scan(&nickname)
 
+	sessionId := createCookie(w, loginInfo.NicknameOrEmail)
+
 	response := LoginResponse{
 		Nickname: nickname,
-		UserID:   getUserId(loginInfo.NicknameOrEmail),
+		UserId:   getUserId(loginInfo.NicknameOrEmail),
+		CookieId: sessionId,
 	}
 
-	createCookie(w, loginInfo.NicknameOrEmail)
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -70,14 +73,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createCookie(w http.ResponseWriter, nicknameOrEmail string) {
+func createCookie(w http.ResponseWriter, nicknameOrEmail string) string {
 	userId := getUserId(nicknameOrEmail)
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
 		fmt.Println(err)
-		return
+		return ""
 	}
-
 
 	sessionValue := uuid.Must(uuid.NewV4()).String()
 	http.SetCookie(w, &http.Cookie{
@@ -91,21 +93,11 @@ func createCookie(w http.ResponseWriter, nicknameOrEmail string) {
 		fmt.Println(err)
 	}
 	statement.Exec(sessionValue, userId)
-}
-
-func getUserId(nicknameOrEmail string) int {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		fmt.Println(err)
-		return -1
-	}
-	var userId int
-	db.QueryRow("SELECT userId FROM users WHERE nickname = ? OR email = ?", nicknameOrEmail, nicknameOrEmail).Scan(&userId)
-	return userId
+	return sessionValue
 }
 
 func CookieHandler(w http.ResponseWriter, r *http.Request) {
-	userId := r.URL.Query().Get("userId")
+	cookieId := r.URL.Query().Get("cookieId")
 
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
@@ -115,7 +107,7 @@ func CookieHandler(w http.ResponseWriter, r *http.Request) {
 
 	// check if a session exists for the given userId
 	var exists bool
-	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM sessions WHERE userId = ?)", userId).Scan(&exists)
+	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM sessions WHERE sessionKey = ?)", cookieId).Scan(&exists)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -123,10 +115,32 @@ func CookieHandler(w http.ResponseWriter, r *http.Request) {
 
 	if exists {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Session exists for user with ID: " + userId))
+		w.Write([]byte("Session exists for user"))
 	} else {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Session does not exist for user with ID: " + userId))
+		w.Write([]byte("Session does not exist for user"))
 	}
 }
 
+
+func LogOutHandler(w http.ResponseWriter, r *http.Request) {
+	userId := r.URL.Query().Get("userId")
+	
+	db, err := sql.Open("sqlite3", "./forum-database/database.db")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:   "sessionForUserId" + userId,
+		Value:  "0",
+		MaxAge: -1,
+	})
+	_, err = db.Exec("DELETE FROM sessions WHERE userId=?", userId) // deletes session when user logs out
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Ended session for user with ID: " + userId))
+}

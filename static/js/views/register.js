@@ -1,3 +1,5 @@
+import { navigateTo } from "./helpers.js"
+
 export default async function() {
     document.querySelector("#app").innerHTML = `
     <html lang="en">
@@ -74,7 +76,7 @@ export default async function() {
 
 const handleResponse = async (response) => {
     if(response.ok) {
-        window.location.href = "/login"
+        navigateTo("/login")
     } else {
         const statusMsg = await response.text()
         console.log(statusMsg)

@@ -22,8 +22,5 @@ func Init() {
 
 func dbIsEmpty() bool {
 	dbText, _ := ioutil.ReadFile("./forum-database/database.db")
-	if(len(dbText) == 0) {
-		return true
-	}
-	return false
+	return len(dbText) == 0
 }
