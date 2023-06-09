@@ -81,6 +81,28 @@ body {
     font-size: 30px;
 }
 
+.reactionbtnLiked {
+    background-color: green;
+    background-repeat: no-repeat;
+    border: solid 1px black;
+    cursor: pointer;
+    overflow: hidden;
+    outline: none;
+    height: 50px;
+    font-size: 30px;
+}
+
+.reactionbtnDisliked {
+    background-color: red;
+    background-repeat: no-repeat;
+    border: solid 1px black;
+    cursor: pointer;
+    overflow: hidden;
+    outline: none;
+    height: 50px;
+    font-size: 30px;
+}
+
 .postcontent {
     flex-basis: 70%;
     font-size: 20px;
@@ -127,3 +149,35 @@ body {
   box-shadow: rgba(44,187,99,.35) 0 -25px 18px -14px inset,rgba(44,187,99,.25) 0 1px 2px,rgba(44,187,99,.25) 0 2px 4px,rgba(44,187,99,.25) 0 4px 8px,rgba(44,187,99,.25) 0 8px 16px,rgba(44,187,99,.25) 0 16px 32px;
   transform: scale(1.05) rotate(-1deg);
 }
+
+.toolbar {
+  list-style-type: none;
+  display: flex;
+  padding: 0;
+}
+
+.option {
+  flex-grow: 1;
+  padding: 5px 10px;
+  background-color: #ccc;
+  cursor: pointer;
+  justify-content: center;
+  height: 50px;
+  align-items: center;
+  display: flex;
+}
+
+.option.selected {
+  background-color: rgb(125, 153, 196);
+  color: #fff;
+}
+
+.option:hover {
+  background-color: #9c9a9a;
+}
+
+.option.selected:hover {
+  background-color: rgb(125, 153, 196);
+  color: #fff;
+}
+  

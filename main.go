@@ -23,6 +23,9 @@ func main() {
 	http.HandleFunc("/create-comment", src.CreateCommentHandler)
 	http.HandleFunc("/get-post-details", src.GetPostDetailsHandler)
 	http.HandleFunc("/post-reaction", src.ReactionHandler)
+	http.HandleFunc("/get-filtered-posts", src.CategoryFilterHandler)
+	http.HandleFunc("/get-all-categories", src.AllCategoriesHandler)
+	http.HandleFunc("/get-user-data", src.GetUserDataHandler)
 	portNr := getPortNr()
 	fmt.Printf("Started server at http://localhost:%v\n", portNr)
 	// runs server

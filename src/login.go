@@ -53,9 +53,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row = db.QueryRow("SELECT nickname FROM users WHERE nickname = ? OR email = ?", loginInfo.NicknameOrEmail, loginInfo.NicknameOrEmail)
 	var nickname string
-	row.Scan(&nickname)
+	db.QueryRow("SELECT nickname FROM users WHERE nickname = ? OR email = ?", loginInfo.NicknameOrEmail, loginInfo.NicknameOrEmail).Scan(&nickname)
 
 	sessionId := createCookie(w, loginInfo.NicknameOrEmail)
 
@@ -105,7 +104,7 @@ func CookieHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// check if a session exists for the given userId
+	// check if a session exists for the given cookieId
 	var exists bool
 	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM sessions WHERE sessionKey = ?)", cookieId).Scan(&exists)
 	if err != nil {
@@ -122,10 +121,9 @@ func CookieHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func LogOutHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.URL.Query().Get("userId")
-	
+
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
 		fmt.Println(err)

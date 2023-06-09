@@ -71,30 +71,8 @@ func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 		FROM posts AS p
 		INNER JOIN users AS u ON p.userId = u.userId
 	`
-	rows, err := db.Query(query)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 
-	var posts []GetPostInfo
-	for rows.Next() {
-		var post GetPostInfo
-		err := rows.Scan(
-			&post.PostId, &post.PostHeader, &post.PostContent, &post.CreatorId,
-			&post.CreatorNickname, &post.Likes, &post.Dislikes, &post.Comments,
-			&post.CreationDate,
-		)
-		post.Categories = getCategories(post.PostId)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		posts = append(posts, post)
-	}
-
-	jsonData, err := json.Marshal(posts)
+	jsonData, err := json.Marshal(getPostsByQuery(db, query))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -113,7 +91,7 @@ func createCategories(categories string) {
 		return
 	}
 	if categories != "" {
-		catSlc := removeDuplicateStr(strings.Split(strings.ReplaceAll(categories, " ", ""), "#"))
+		catSlc := removeDuplicateStr(strings.Split(strings.ReplaceAll(strings.ToUpper(categories), " ", ""), "#"))
 		var postId int
 		db.QueryRow("SELECT postId FROM posts ORDER BY postId DESC LIMIT 1").Scan(&postId)
 		for _, v := range catSlc {
@@ -141,4 +119,28 @@ func getCategories(postId int) []string {
 		resSlc = append(resSlc, category)
 	}
 	return resSlc
+}
+
+func getPostsByQuery(db *sql.DB, query string) []GetPostInfo{
+	rows, err := db.Query(query)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var posts []GetPostInfo
+	for rows.Next() {
+		var post GetPostInfo
+		err := rows.Scan(
+			&post.PostId, &post.PostHeader, &post.PostContent, &post.CreatorId,
+			&post.CreatorNickname, &post.Likes, &post.Dislikes, &post.Comments,
+			&post.CreationDate,
+		)
+		post.Categories = getCategories(post.PostId)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		posts = append(posts, post)
+	}
+	return posts
 }

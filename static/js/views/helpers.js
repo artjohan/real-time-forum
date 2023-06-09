@@ -4,6 +4,7 @@ import login, { hasCookie } from "./login.js"
 import error from "./error.js"
 import logout from "./logout.js"
 import posts from "./posts.js"
+import user from "./user.js"
 
 
 
@@ -20,6 +21,7 @@ export const router = async () => {
         { path: "/login", view: login },
         { path: "/logout", view: logout },
         { path: "/posts", view: posts },
+        { path: "/user", view: user },
     ]
 
     const potentialMatches = routes.map(route => {
@@ -48,4 +50,13 @@ export const hasSession = async () => {
         }
     }
     return false
+}
+
+export const handleResponse = async (response) => {
+    if(response.ok) {
+        router()
+    } else {
+        const statusMsg = await response.text()
+        console.log(statusMsg)
+    }
 }

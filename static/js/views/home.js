@@ -1,4 +1,4 @@
-import { hasSession, navigateTo } from "./helpers.js"
+import { hasSession, navigateTo, handleResponse, router } from "./helpers.js"
 
 export default async function() {
     const isAuthorized = await hasSession()
@@ -8,8 +8,9 @@ export default async function() {
     } else {
         const userData = JSON.parse(localStorage.getItem("userData"))
         const allPosts = await getPosts()
+        const allCategories = await getCategories()
+
         document.querySelector("#app").innerHTML = `
-        <body>
             <div class="header">
                 <br><a>Welcome to the Forum, </a>
                 <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a><br><br>
@@ -19,47 +20,36 @@ export default async function() {
                 </div>
             </div>
             <div style="text-align: center;">
-            <br><br>
-            <h1 style="font-size: 50px;">Posts</h1>
-            <form id="createPost">
-                <div style="display: flex;">
-                    <input style="width: 50%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; font-size: 20px;" name="postHeader" type="text" placeholder="Post header" required maxlength=40>
-                    <input style="width: 50%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; font-size: 20px;" name="categories" type="text" placeholder="Optional categories, separate each one with #"><br>
-                </div><br>
-                <textarea style="width: 100%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; height: 100px; font-size: 20px;" name="postContent" placeholder="Post content" required></textarea><br><br>
-                <button class="button-33" type="submit">Submit post</button>
-            </form>
-            <div id="posts"></div>
-        </div>
-        </body>
+                <br><br>
+                <h1 style="font-size: 50px;">Posts</h1>
+                <form id="createPost">
+                    <div style="display: flex;">
+                        <input style="width: 50%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; font-size: 20px;" name="postHeader" type="text" placeholder="Post header" required maxlength=40>
+                        <input style="width: 50%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; font-size: 20px;" name="categories" type="text" placeholder="Optional categories, separate each one with #"><br>
+                    </div><br>
+                    <textarea style="width: 100%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; height: 100px; font-size: 20px;" name="postContent" placeholder="Post content" required></textarea><br><br>
+                    <button class="button-33" type="submit">Submit post</button>
+                </form>
+                <br><br><br>
+                <label for="categorySelect">Choose category:</label>
+                <select id="categorySelect" name="categorySelect">
+                    <option value="" selected>All categories</option>
+                </select><br><br>
+                <div id="posts"></div>
+            </div>
         `
         
         allPosts.forEach(post => {
-            document.querySelector("#posts").innerHTML += `
-            <div class="threadbox">
-                <div class="title">
-                    <a style="white-space: pre; font-size: 30px; font-weight: bold;" href="/posts?id=${post.postId}" data-link>${post.postHeader}</a>
-                </div>
-                <div id="categoriesOfPost${post.postId}" class="threadcats"></div>
-                <div class="threadinfo">
-                    <a>Started by </a>
-                    <a href="/user?id=${post.creatorId}" data-link>${post.creatorNickname}</a>
-                    <a>on</a>
-                    <a>${post.creationDate}</a><br>
-                </div>
-                <div style="text-align: center; flex-basis: 10%;">
-                    <a>Comments: ${post.comments}</a>
-                </div>
-            </div>
-            `
+            addPostHtml(post, "posts")
+        })
 
-            if(post.categories) {
-                const categoryDiv = document.querySelector(`#categoriesOfPost${post.postId}`)
-                categoryDiv.innerHTML += `<a>Categories: </a>`
-                post.categories.forEach(category => {
-                    categoryDiv.innerHTML += `<a href="/category?cat=${category}" data-link>#${category} </a>`
-                })
-            }
+        allCategories.forEach(category => {
+            const option = document.createElement('option');
+  
+            option.value = category
+            option.textContent = category;
+
+            document.getElementById("categorySelect").appendChild(option);
         })
 
         const createPostData = {}
@@ -88,15 +78,22 @@ export default async function() {
                 console.error(error)
             }
         })
-    }
-}
 
-const handleResponse = async (response) => {
-    if(response.ok) {
-        window.location.reload()
-    } else {
-        const statusMsg = await response.text()
-        console.log(statusMsg)
+        const categorySelect = document.getElementById("categorySelect");
+
+        categorySelect.addEventListener("change", async (event) => {
+            const selectedCategory = event.target.value
+            if(selectedCategory) {
+                const filteredPosts = await getFilteredPosts(selectedCategory)
+
+                document.querySelector("#posts").innerHTML = ""
+                filteredPosts.forEach(post => {
+                    addPostHtml(post, "posts")
+                })
+            } else {
+                router()
+            }
+        })
     }
 }
 
@@ -112,4 +109,59 @@ const getPosts = async () => {
     } catch (error) {
         console.error(error)
     }
+}
+
+const getCategories = async () => {
+    try {
+        const response = await fetch('/get-all-categories')
+        if (response.ok) {
+            const data = await response.json()
+            return data
+        } else {
+            console.log(response.statusText)
+        }
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+const getFilteredPosts = async (category) => {
+    try {
+        const response = await fetch(`/get-filtered-posts?category=${category}`)
+        if (response.ok) {
+            const data = await response.json()
+            return data
+        } else {
+            console.log(response.statusText)
+        }
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+export const addPostHtml = (post, contentDivId) => {
+    document.querySelector(`#${contentDivId}`).innerHTML += `
+        <div class="threadbox">
+            <div class="title">
+                <a style="white-space: pre; font-size: 30px; font-weight: bold;" href="/posts?id=${post.postId}" data-link>${post.postHeader}</a>
+            </div>
+            <div id="categoriesOfPost${post.postId}" class="threadcats"></div>
+            <div class="threadinfo">
+                <a>Started by </a>
+                <a href="/user?id=${post.creatorId}" data-link>${post.creatorNickname}</a>
+                <a>on</a>
+                <a>${post.creationDate}</a><br>
+            </div>
+            <div style="text-align: center; flex-basis: 10%;">
+                <a>Comments: ${post.comments}</a>
+            </div>
+        </div>
+        `
+        if(post.categories) {
+            const categoryDiv = document.querySelector(`#categoriesOfPost${post.postId}`)
+            categoryDiv.innerHTML += `<a>Categories: </a>`
+            post.categories.forEach(category => {
+                categoryDiv.innerHTML += `<a>${category} </a>`
+            })
+        }
 }
