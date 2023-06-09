@@ -1,6 +1,6 @@
 import { hasSession, navigateTo, router } from "./helpers.js"
 import { addPostHtml } from "./home.js"
-import { addCommentHtml } from "./posts.js"
+import { addCommentHtml, handleCommentReactions, postReaction } from "./posts.js"
 
 
 export default async function() {
@@ -73,6 +73,8 @@ export default async function() {
                     addDislikedCommentsHtml(contentDiv, allData)
                     break;
             }
+            handleCommentReactions(userData)
+            handlePostReactions(userData)
         }
     }
 }
@@ -92,7 +94,7 @@ const addCreatedCommentsHtml = (contentDiv, allData) => {
     contentDiv.innerHTML = ""
     if(allData.createdComments) {
         allData.createdComments.forEach(comment => {
-            addParentPostHtml(comment.parentPostInfo, "selectContent")
+            addParentPostHtml(comment.parentPostInfo, "selectContent", "User commented:")
             comment.commentsInfo.forEach(commentInfo => {
                 addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
             })
@@ -117,7 +119,10 @@ const addLikedCommentsHtml = (contentDiv, allData) => {
     contentDiv.innerHTML = ""
     if(allData.likedComments) {
         allData.likedComments.forEach(comment => {
-            
+            addParentPostHtml(comment.parentPostInfo, "selectContent", "User liked:")
+            comment.commentsInfo.forEach(commentInfo => {
+                addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
+            })
         })
     } else {
         contentDiv.innerHTML = "<h1>Nothing to show here</h1>"
@@ -139,7 +144,10 @@ const addDislikedCommentsHtml = (contentDiv, allData) => {
     contentDiv.innerHTML = ""
     if(allData.dislikedComments) {
         allData.dislikedComments.forEach(comment => {
-            
+            addParentPostHtml(comment.parentPostInfo, "selectContent", "User disliked:")
+            comment.commentsInfo.forEach(commentInfo => {
+                addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
+            })
         })
     } else {
         contentDiv.innerHTML = "<h1>Nothing to show here</h1>"
@@ -160,7 +168,7 @@ const getUserData = async (userId, currentUserId) => {
     }
 }
 
-const addParentPostHtml = (parentPostInfo, contentDivId) => {
+const addParentPostHtml = (parentPostInfo, contentDivId, descMsg) => {
     document.querySelector(`#${contentDivId}`).innerHTML += `
         <div style="text-align: center;">
             <br><br>
@@ -176,14 +184,30 @@ const addParentPostHtml = (parentPostInfo, contentDivId) => {
                     <a>${parentPostInfo.postContent}</a>
                 </div>
                 <div class="reactionbox">
-                    <button class="` + (parentPostInfo.likedByCurrentUser ? "reactionbtnLiked" : "reactionbtn") + `" id="postLike">👍</button>
+                    <button class="` + (parentPostInfo.likedByCurrentUser ? "reactionbtnLiked" : "reactionbtn") + `" id="postLike" value="${parentPostInfo.postId}">👍</button>
                     <a style="color: green; text-shadow: 1px 1px 0 #000; font-size: 30px;">${parentPostInfo.likes}</a>
-                    <button class="` + (parentPostInfo.dislikedByCurrentUser ? "reactionbtnDisliked" : "reactionbtn") + `" id="postDislike">👎</button>
+                    <button class="` + (parentPostInfo.dislikedByCurrentUser ? "reactionbtnDisliked" : "reactionbtn") + `" id="postDislike" value="${parentPostInfo.postId}">👎</button>
                     <a style="color: red; text-shadow: 1px 1px 0 #000; font-size: 30px;">${parentPostInfo.dislikes}</a>
                 </div>
             </div><br><br><br>
-            <h1 style="font-size: 50px;">User commented:</h1>
+            <h1 style="font-size: 50px;">${descMsg}</h1>
             <div id="comments${parentPostInfo.postId}"></div>
         </div>
     `
+}
+
+const handlePostReactions = (userData) => {
+    const postLikeBtns = document.querySelectorAll("#postLike")
+    postLikeBtns.forEach(postLikeBtn => {
+        postLikeBtn.addEventListener("click", () => {
+            postReaction(parseInt(postLikeBtn.value), userData, "like", "post")
+        })
+    })
+
+    const postDislikeBtns = document.querySelectorAll("#postDislike")
+    postDislikeBtns.forEach(postDislikeBtn => {
+        postDislikeBtn.addEventListener("click", () => {
+            postReaction(parseInt(postDislikeBtn.value), userData, "dislike", "post")
+        })
+    })
 }

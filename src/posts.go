@@ -59,6 +59,7 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
+	userId := r.URL.Query().Get("userId")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -72,7 +73,7 @@ func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 		INNER JOIN users AS u ON p.userId = u.userId
 	`
 
-	jsonData, err := json.Marshal(getPostsByQuery(db, query))
+	jsonData, err := json.Marshal(getPostsByQuery(db, query, userId))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -121,7 +122,7 @@ func getCategories(postId int) []string {
 	return resSlc
 }
 
-func getPostsByQuery(db *sql.DB, query string) []GetPostInfo{
+func getPostsByQuery(db *sql.DB, query, userId string) []GetPostInfo {
 	rows, err := db.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -138,6 +139,14 @@ func getPostsByQuery(db *sql.DB, query string) []GetPostInfo{
 		post.Categories = getCategories(post.PostId)
 		if err != nil {
 			fmt.Println(err)
+		}
+		userReaction := userReactionType(db, post.PostId, userId, "post")
+		if userReaction != "" {
+			if userReaction == "like" {
+				post.LikedByCurrentUser = true
+			} else {
+				post.DislikedByCurrentUser = true
+			}
 		}
 
 		posts = append(posts, post)

@@ -50,7 +50,7 @@ const handlePostReactions = (postId, userData) => {
     })
 }
 
-const handleCommentReactions = (userData) => {
+export const handleCommentReactions = (userData) => {
     const commentLikeBtns = document.querySelectorAll("#commentLike")
     commentLikeBtns.forEach(commentLikeBtn => {
         commentLikeBtn.addEventListener("click", () => {
@@ -66,7 +66,7 @@ const handleCommentReactions = (userData) => {
     })
 }
 
-const postReaction = async (postId, userData, reactionType, postType) => {
+export const postReaction = async (postId, userData, reactionType, postType) => {
     const addReactionData = {
         reactionType,
         postType,

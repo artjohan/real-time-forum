@@ -77,12 +77,25 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 			c.likes, c.dislikes, c.creationDate
 		FROM comments AS c
 		INNER JOIN users AS u ON c.userId = u.userId
-		WHERE c.postId = ?
-	`
-	rows, err := db.Query(query, postId)
+		WHERE c.postId = ` + postId
+
+	postAndCommentsInfo.CommentsInfo = getCommentsByQuery(db, query, userId)
+
+	jsonData, err := json.Marshal(postAndCommentsInfo)
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
+}
+
+func getCommentsByQuery(db *sql.DB, query, userId string) []CommentInfo {
+	rows, err := db.Query(query)
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	var comments []CommentInfo
@@ -95,7 +108,6 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		)
 		if err != nil {
 			fmt.Println(err)
-			return
 		}
 
 		userReaction := userReactionType(db, comment.CommentId, userId, "comment")
@@ -109,18 +121,7 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 
 		comments = append(comments, comment)
 	}
-
-	postAndCommentsInfo.CommentsInfo = comments
-
-	jsonData, err := json.Marshal(postAndCommentsInfo)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	return comments
 }
 
 func getParentPostInfo(userId, postId string) GetPostInfo {

@@ -43,6 +43,9 @@ func GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
 	userData.CreatedPosts = getCreatedPosts(db, userId)
 	userData.LikedPosts = getUserReactedPosts(db, userId, "like")
 	userData.DislikedPosts = getUserReactedPosts(db, userId, "dislike")
+	userData.LikedComments = getUserReactedCommentsInfo(db, userId, currentUserId, "like")
+	userData.DislikedComments = getUserReactedCommentsInfo(db, userId, currentUserId, "dislike")
+
 	jsonData, err := json.Marshal(userData)
 	if err != nil {
 		fmt.Println(err)
@@ -67,7 +70,7 @@ func getUserInfo(db *sql.DB, userId string) UserInfo {
 
 func getCreatedCommentsInfo(db *sql.DB, userId, currentUserId string) []GetPostAndCommentsInfo {
 	var createdCommentsInfo []GetPostAndCommentsInfo
-	parentPosts := getParentPosts(db, userId)
+	parentPosts := getCreatedCommentsParentPosts(db, userId)
 	for _, v := range parentPosts {
 		var singlePostAndComments GetPostAndCommentsInfo
 		singlePostAndComments.ParentPostInfo = v
@@ -75,6 +78,18 @@ func getCreatedCommentsInfo(db *sql.DB, userId, currentUserId string) []GetPostA
 		createdCommentsInfo = append(createdCommentsInfo, singlePostAndComments)
 	}
 	return createdCommentsInfo
+}
+
+func getUserReactedCommentsInfo(db *sql.DB, userId, currentUserId, reactionType string) []GetPostAndCommentsInfo {
+	var reactedCommentsInfo []GetPostAndCommentsInfo
+	likedParentPosts := getReactedCommentsParentPosts(db, userId, reactionType)
+	for _, v := range likedParentPosts {
+		var singlePostAndComments GetPostAndCommentsInfo
+		singlePostAndComments.ParentPostInfo = v
+		singlePostAndComments.CommentsInfo = getUserReactedCommentsUnderPost(db, userId, currentUserId, strconv.Itoa(v.PostId), reactionType)
+		reactedCommentsInfo = append(reactedCommentsInfo, singlePostAndComments)
+	}
+	return reactedCommentsInfo
 }
 
 func getCreatedPosts(db *sql.DB, userId string) []GetPostInfo {
@@ -85,7 +100,8 @@ func getCreatedPosts(db *sql.DB, userId string) []GetPostInfo {
 		FROM posts AS p
 		INNER JOIN users AS u ON p.userId = u.userId
 		WHERE p.userId = ` + userId
-	return getPostsByQuery(db, query)
+
+	return getPostsByQuery(db, query, userId)
 }
 
 func getUserReactedPosts(db *sql.DB, userId, reactionType string) []GetPostInfo {
@@ -96,11 +112,12 @@ func getUserReactedPosts(db *sql.DB, userId, reactionType string) []GetPostInfo 
 		FROM posts AS p
 		INNER JOIN users AS u ON p.userId = u.userId
 		INNER JOIN reactions AS r ON p.postId = r.postId
-		WHERE r.userId = ` + userId + ` AND reactionType = "` + reactionType + `"`
-	return getPostsByQuery(db, query)
+		WHERE r.userId = ` + userId + ` AND r.reactionType = "` + reactionType + `"`
+
+	return getPostsByQuery(db, query, userId)
 }
 
-func getParentPosts(db *sql.DB, userId string) []GetPostInfo {
+func getCreatedCommentsParentPosts(db *sql.DB, userId string) []GetPostInfo {
 	query := `
 		SELECT DISTINCT p.postId, p.header AS postHeader, p.content AS postContent, 
 			p.userId AS creatorId, u.nickname AS creatorNickname,
@@ -108,9 +125,24 @@ func getParentPosts(db *sql.DB, userId string) []GetPostInfo {
 		FROM posts AS p
 		INNER JOIN users AS u ON p.userId = u.userId
 		INNER JOIN comments AS c ON p.postId = c.postId
-		WHERE c.userId = ` + userId
+		INNER JOIN reactions AS r ON c.commentId = r.commentId
+		WHERE r.userId = ` + userId
 
-	return getPostsByQuery(db, query)
+	return getPostsByQuery(db, query, userId)
+}
+
+func getReactedCommentsParentPosts(db *sql.DB, userId string, reactionType string) []GetPostInfo {
+	query := `
+		SELECT DISTINCT p.postId, p.header AS postHeader, p.content AS postContent, 
+			p.userId AS creatorId, u.nickname AS creatorNickname,
+			p.likes, p.dislikes, p.comments, p.creationDate
+		FROM posts AS p
+		INNER JOIN users AS u ON p.userId = u.userId
+		INNER JOIN comments AS c ON p.postId = c.postId
+		INNER JOIN reactions AS r ON c.commentId = r.commentId
+		WHERE c.userId = ` + userId  + ` AND r.reactionType = "` + reactionType + `"`
+
+	return getPostsByQuery(db, query, userId)
 }
 
 func getUserCreatedCommentsUnderPost(db *sql.DB, userId, currentUserId, postId string) []CommentInfo {
@@ -120,35 +152,20 @@ func getUserCreatedCommentsUnderPost(db *sql.DB, userId, currentUserId, postId s
 			c.likes, c.dislikes, c.creationDate
 		FROM comments AS c
 		INNER JOIN users AS u ON c.userId = u.userId
-		WHERE c.postId = ? AND c.userId = ?
-	`
-	rows, err := db.Query(query, postId, userId)
-	if err != nil {
-		fmt.Println(err)
-	}
+		WHERE c.postId = ` + postId +` AND c.userId = ` + userId
+	
+	return getCommentsByQuery(db, query, currentUserId)
+}
 
-	var comments []CommentInfo
-	for rows.Next() {
-		var comment CommentInfo
-		err := rows.Scan(
-			&comment.CommentId, &comment.CommentContent, &comment.CreatorId,
-			&comment.CreatorNickname, &comment.Likes, &comment.Dislikes,
-			&comment.CreationDate,
-		)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		userReaction := userReactionType(db, comment.CommentId, userId, "comment")
-		if userReaction != "" {
-			if userReaction == "like" {
-				comment.LikedByCurrentUser = true
-			} else {
-				comment.DislikedByCurrentUser = true
-			}
-		}
-
-		comments = append(comments, comment)
-	}
-	return comments
+func getUserReactedCommentsUnderPost(db *sql.DB, userId, currentUserId, postId, reactionType string) []CommentInfo {
+	query := `
+		SELECT c.commentId, c.content AS commentContent, 
+			c.userId AS creatorId, u.nickname AS creatorNickname,
+			c.likes, c.dislikes, c.creationDate
+		FROM comments AS c
+		INNER JOIN users AS u ON c.userId = u.userId
+		INNER JOIN reactions AS r ON c.commentId = r.commentId
+		WHERE r.userId = ` + userId + ` AND r.reactionType = "` + reactionType + `" AND c.postId = ` + postId
+	
+	return getCommentsByQuery(db, query, currentUserId)
 }

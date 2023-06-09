@@ -7,7 +7,7 @@ export default async function() {
         return
     } else {
         const userData = JSON.parse(localStorage.getItem("userData"))
-        const allPosts = await getPosts()
+        const allPosts = await getPosts(userData.userId)
         const allCategories = await getCategories()
 
         document.querySelector("#app").innerHTML = `
@@ -97,9 +97,9 @@ export default async function() {
     }
 }
 
-const getPosts = async () => {
+const getPosts = async (userId) => {
     try {
-        const response = await fetch('/get-posts')
+        const response = await fetch(`get-posts?userId=${userId}`)
         if (response.ok) {
             const data = await response.json()
             return data
