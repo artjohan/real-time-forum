@@ -3,7 +3,7 @@ package src
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -34,25 +34,25 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	var createCommentInfo CreateCommentInfo
 	err := json.NewDecoder(r.Body).Decode(&createCommentInfo)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
 	statement, err := db.Prepare("INSERT INTO comments (content, postId, userId, creationDate) VALUES (?, ?, ?, ?)")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
 	_, err = statement.Exec(createCommentInfo.CommentContent, createCommentInfo.PostId, createCommentInfo.CreatorId, getCurrentDate())
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -67,7 +67,7 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 
 	jsonData, err := json.Marshal(postAndCommentsInfo)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -95,7 +95,7 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 func getCommentsByQuery(db *sql.DB, query, userId string) []CommentInfo {
 	rows, err := db.Query(query)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	var comments []CommentInfo
@@ -107,7 +107,7 @@ func getCommentsByQuery(db *sql.DB, query, userId string) []CommentInfo {
 			&comment.CreationDate,
 		)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 
 		userReaction := userReactionType(db, comment.CommentId, userId, "comment")
@@ -128,7 +128,7 @@ func getParentPostInfo(userId, postId string) GetPostInfo {
 	var parentPost GetPostInfo
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	query := `
@@ -145,7 +145,7 @@ func getParentPostInfo(userId, postId string) GetPostInfo {
 		&parentPost.CreationDate)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	userReaction := userReactionType(db, parentPost.PostId, userId, "post")
 	if userReaction != "" {
@@ -162,7 +162,7 @@ func updatePostComments(db *sql.DB, postId int) {
 	query := "UPDATE posts SET comments = comments + 1 WHERE postId = ?"
 	_, err := db.Exec(query, postId)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }
 

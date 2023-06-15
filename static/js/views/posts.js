@@ -1,4 +1,5 @@
 import { hasSession, navigateTo, handleResponse } from "./helpers.js"
+import { addChatbarHtml, addChatboxListener } from "./home.js"
 
 export default async function() {
     const isAuthorized = await hasSession()
@@ -23,6 +24,9 @@ export default async function() {
 
         handlePostReactions(parseInt(postId), userData)
         handleCommentReactions(userData)
+
+        addChatboxListener()
+        addChatbarHtml(userData)
     }
 }
 
@@ -114,8 +118,13 @@ const createCommentListener = (userData, postId) => {
 const addToolbarAndPostHtml = (userData, allInfo) => {
     document.querySelector("#app").innerHTML = `
         <div class="header">
-            <br><a>Welcome to the Forum, </a>
-            <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a><br><br>
+            <div class="nameAndChatBtncontainer">
+                <div>
+                    <a>Welcome to the Forum, </a>
+                    <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
+                </div>
+                <button id="chatBtn">Show chat</button>
+            </div><br><br>
             <a href="/logout" data-link>Log out</a>
             <div style="text-align: center;">
                 <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>

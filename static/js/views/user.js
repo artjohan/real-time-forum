@@ -1,5 +1,5 @@
-import { hasSession, navigateTo, router } from "./helpers.js"
-import { addPostHtml } from "./home.js"
+import { hasSession, navigateTo } from "./helpers.js"
+import { addChatbarHtml, addChatboxListener, addPostHtml } from "./home.js"
 import { addCommentHtml, handleCommentReactions, postReaction } from "./posts.js"
 
 
@@ -15,11 +15,15 @@ export default async function() {
         const userData = JSON.parse(localStorage.getItem("userData"))
 
         const allData = await getUserData(userId, userData.userId)
-        console.log(allData)
         document.querySelector("#app").innerHTML = `
         <div class="header">
-            <br><a>Welcome to the Forum, </a>
-            <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a><br><br>
+            <div class="nameAndChatBtncontainer">
+                <div>
+                    <a>Welcome to the Forum, </a>
+                    <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
+                </div>
+                <button id="chatBtn">Show chat</button>
+            </div><br><br>
             <a href="/logout" data-link>Log out</a>
             <div style="text-align: center;">
                 <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
@@ -50,6 +54,9 @@ export default async function() {
                 navigateTo(`/user?id=${userId}&view=${e.target.id}`)
             })
         })
+
+        addChatboxListener()
+        addChatbarHtml(userData)
 
         if(viewType) {
             document.getElementById(viewType).classList.add("selected")

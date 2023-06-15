@@ -2,8 +2,8 @@ package src
 
 import (
 	"database/sql"
-	"fmt"
 	"io/ioutil"
+	"log"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -11,11 +11,11 @@ import (
 func Init() {
 	dataBase, e := sql.Open("sqlite3", "./forum-database/database.db")
 	if e != nil {
-		fmt.Println(e)
+		log.Println(e)
 		return
 	}
 	if dbIsEmpty() {
-		sqlInit, _ :=  ioutil.ReadFile("./forum-database/init.sql")
+		sqlInit, _ := ioutil.ReadFile("./forum-database/init.sql")
 		dataBase.Exec(string(sqlInit))
 	}
 }

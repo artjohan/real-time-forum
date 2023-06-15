@@ -3,7 +3,7 @@ package src
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -26,13 +26,13 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var loginInfo LoginInfo
 	err := json.NewDecoder(r.Body).Decode(&loginInfo)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -67,7 +67,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 }
@@ -76,7 +76,7 @@ func createCookie(w http.ResponseWriter, nicknameOrEmail string) string {
 	userId := getUserId(nicknameOrEmail)
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return ""
 	}
 
@@ -89,7 +89,7 @@ func createCookie(w http.ResponseWriter, nicknameOrEmail string) string {
 	db.Exec("DELETE FROM sessions WHERE userId=?", userId) // deletes previous session from the same user to avoid double sessions from one user
 	statement, err := db.Prepare("INSERT INTO sessions (sessionKey, userId) VALUES (?, ?)")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	statement.Exec(sessionValue, userId)
 	return sessionValue
@@ -100,7 +100,7 @@ func CookieHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func CookieHandler(w http.ResponseWriter, r *http.Request) {
 	var exists bool
 	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM sessions WHERE sessionKey = ?)", cookieId).Scan(&exists)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -126,7 +126,7 @@ func LogOutHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
@@ -136,7 +136,7 @@ func LogOutHandler(w http.ResponseWriter, r *http.Request) {
 	})
 	_, err = db.Exec("DELETE FROM sessions WHERE userId=?", userId) // deletes session when user logs out
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

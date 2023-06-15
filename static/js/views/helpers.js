@@ -5,6 +5,7 @@ import error from "./error.js"
 import logout from "./logout.js"
 import posts from "./posts.js"
 import user from "./user.js"
+import chat from "./chat.js"
 
 
 
@@ -22,6 +23,7 @@ export const router = async () => {
         { path: "/logout", view: logout },
         { path: "/posts", view: posts },
         { path: "/user", view: user },
+        { path: "/chat", view: chat },
     ]
 
     const potentialMatches = routes.map(route => {
@@ -58,5 +60,12 @@ export const handleResponse = async (response) => {
     } else {
         const statusMsg = await response.text()
         console.log(statusMsg)
+    }
+}
+
+export class Event {
+    constructor(type, payload) {
+        this.type = type
+        this.payload = payload
     }
 }

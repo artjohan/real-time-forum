@@ -3,7 +3,7 @@ package src
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -28,6 +28,12 @@ type UserInfo struct {
 	Online    bool   `json:"online"`
 }
 
+type UserChatInfo struct {
+	UserId   int    `json:"userId"`
+	Nickname string `json:"nickname"`
+	Online   bool   `json:"online"`
+}
+
 func GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.URL.Query().Get("userId")
 	currentUserId := r.URL.Query().Get("currentUser")
@@ -35,7 +41,7 @@ func GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	userData.CreatedComments = getCreatedCommentsInfo(db, userId, currentUserId)
@@ -48,7 +54,7 @@ func GetUserDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	jsonData, err := json.Marshal(userData)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -63,7 +69,7 @@ func getUserInfo(db *sql.DB, userId string) UserInfo {
 
 	err := row.Scan(&userInfo.Nickname, &userInfo.Email, &userInfo.FirstName, &userInfo.LastName, &userInfo.Age, &userInfo.Gender, &userInfo.Online)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return userInfo
 }
@@ -90,6 +96,40 @@ func getUserReactedCommentsInfo(db *sql.DB, userId, currentUserId, reactionType 
 		reactedCommentsInfo = append(reactedCommentsInfo, singlePostAndComments)
 	}
 	return reactedCommentsInfo
+}
+
+func GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	var users []UserChatInfo
+	db, err := sql.Open("sqlite3", "./forum-database/database.db")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	rows, err := db.Query("SELECT userId, nickname, online FROM users")
+	if err != nil {
+		log.Println(err)
+	}
+
+	for rows.Next() {
+		var user UserChatInfo
+		err := rows.Scan(&user.UserId, &user.Nickname, &user.Online)
+		if err != nil {
+			log.Println(err)
+		}
+
+		users = append(users, user)
+	}
+
+	jsonData, err := json.Marshal(users)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
 }
 
 func getCreatedPosts(db *sql.DB, userId string) []GetPostInfo {
@@ -140,7 +180,7 @@ func getReactedCommentsParentPosts(db *sql.DB, userId string, reactionType strin
 		INNER JOIN users AS u ON p.userId = u.userId
 		INNER JOIN comments AS c ON p.postId = c.postId
 		INNER JOIN reactions AS r ON c.commentId = r.commentId
-		WHERE c.userId = ` + userId  + ` AND r.reactionType = "` + reactionType + `"`
+		WHERE c.userId = ` + userId + ` AND r.reactionType = "` + reactionType + `"`
 
 	return getPostsByQuery(db, query, userId)
 }
@@ -152,8 +192,8 @@ func getUserCreatedCommentsUnderPost(db *sql.DB, userId, currentUserId, postId s
 			c.likes, c.dislikes, c.creationDate
 		FROM comments AS c
 		INNER JOIN users AS u ON c.userId = u.userId
-		WHERE c.postId = ` + postId +` AND c.userId = ` + userId
-	
+		WHERE c.postId = ` + postId + ` AND c.userId = ` + userId
+
 	return getCommentsByQuery(db, query, currentUserId)
 }
 
@@ -166,6 +206,6 @@ func getUserReactedCommentsUnderPost(db *sql.DB, userId, currentUserId, postId, 
 		INNER JOIN users AS u ON c.userId = u.userId
 		INNER JOIN reactions AS r ON c.commentId = r.commentId
 		WHERE r.userId = ` + userId + ` AND r.reactionType = "` + reactionType + `" AND c.postId = ` + postId
-	
+
 	return getCommentsByQuery(db, query, currentUserId)
 }

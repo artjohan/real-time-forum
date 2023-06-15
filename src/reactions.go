@@ -3,7 +3,7 @@ package src
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -18,7 +18,7 @@ func ReactionHandler(w http.ResponseWriter, r *http.Request) {
 	var reactionInfo ReactionInfo
 	err := json.NewDecoder(r.Body).Decode(&reactionInfo)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -29,7 +29,7 @@ func ReactionHandler(w http.ResponseWriter, r *http.Request) {
 func addReaction(postOrCommentId, userId int, reactionType, postType string) {
 	dataBase, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	var reaction string
@@ -51,12 +51,12 @@ func updateReactionCount(db *sql.DB, postOrCommentId int, postType, reactionType
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM reactions WHERE "+postType+"Id = ? AND reactionType = ?", postOrCommentId, reactionType).Scan(&count)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
-	query := "UPDATE "+postType+"s SET "+reactionType+"s = ? WHERE "+postType+"Id = ?"
+	query := "UPDATE " + postType + "s SET " + reactionType + "s = ? WHERE " + postType + "Id = ?"
 	_, err = db.Exec(query, count, postOrCommentId)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }

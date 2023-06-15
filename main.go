@@ -26,6 +26,8 @@ func main() {
 	http.HandleFunc("/get-filtered-posts", src.CategoryFilterHandler)
 	http.HandleFunc("/get-all-categories", src.AllCategoriesHandler)
 	http.HandleFunc("/get-user-data", src.GetUserDataHandler)
+	http.HandleFunc("/get-all-users", src.GetAllUsers)
+	http.HandleFunc("/ws", src.NewManager().ServeWS)
 	portNr := getPortNr()
 	fmt.Printf("Started server at http://localhost:%v\n", portNr)
 	// runs server

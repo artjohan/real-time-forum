@@ -12,8 +12,13 @@ export default async function() {
 
         document.querySelector("#app").innerHTML = `
             <div class="header">
-                <br><a>Welcome to the Forum, </a>
-                <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a><br><br>
+                <div class="nameAndChatBtncontainer">
+                    <div>
+                        <a>Welcome to the Forum, </a>
+                        <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
+                    </div>
+                    <button id="chatBtn"></button>
+                </div><br><br>
                 <a href="/logout" data-link>Log out</a>
                 <div style="text-align: center;">
                     <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
@@ -38,11 +43,17 @@ export default async function() {
                 <div id="posts"></div>
             </div>
         `
-        
-        allPosts.forEach(post => {
-            addPostHtml(post, "posts")
-        })
 
+        addChatboxListener()
+        addChatbarHtml(userData)
+        
+        if(allPosts) {
+            allPosts.forEach(post => {
+                addPostHtml(post, "posts")
+            })
+        }
+
+       if(allCategories) {
         allCategories.forEach(category => {
             const option = document.createElement('option');
   
@@ -51,6 +62,7 @@ export default async function() {
 
             document.getElementById("categorySelect").appendChild(option);
         })
+       }
 
         const createPostData = {}
         const createPostForm = document.getElementById("createPost")
@@ -111,9 +123,67 @@ const getPosts = async (userId) => {
     }
 }
 
+export const addChatbarHtml = async (userData) => {
+    const chatDiv = document.getElementById("messages")
+    const allUserInfo = await getAllUsers()
+    chatDiv.innerHTML = ""
+    allUserInfo.forEach(user => {
+        if(user.userId !== userData.userId) {
+            chatDiv.innerHTML += `
+                <div class="userBox" >
+                    <h1>${user.nickname}</h1>
+                    <header>msg here</header>
+                    <a href="/chat?id=${user.userId}" data-link>Send msg</a>
+                    <a href="/user?id=${user.userId}" data-link>Go to profile</a>
+                </div>
+            `
+        }
+    })
+}
+
+export const addChatboxListener = () => {
+    const chatDiv = document.getElementById("messages")
+    const appDiv = document.getElementById("app")
+    const chatBtn = document.getElementById("chatBtn")
+
+    if(chatDiv.dataset.value === "minimized") {
+        chatBtn.innerHTML = "Show chat"
+    } else {
+        chatBtn.innerHTML = "Minimize chat"
+    }
+
+    chatBtn.addEventListener("click", () => {
+        if(chatDiv.dataset.value === "minimized") {
+            chatBtn.innerHTML = "Minimize chat"
+            chatDiv.dataset.value = "maximized"
+            appDiv.style.width = "75%"
+            chatDiv.style.visibility = "visible"
+        } else {
+            chatBtn.innerHTML = "Show chat"
+            chatDiv.dataset.value = "minimized"
+            appDiv.style.width = "100%"
+            chatDiv.style.visibility = "hidden"
+        }
+    })
+}
+
 const getCategories = async () => {
     try {
         const response = await fetch('/get-all-categories')
+        if (response.ok) {
+            const data = await response.json()
+            return data
+        } else {
+            console.log(response.statusText)
+        }
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+const getAllUsers = async () => {
+    try {
+        const response = await fetch('/get-all-users')
         if (response.ok) {
             const data = await response.json()
             return data

@@ -47,7 +47,7 @@ const handleResponse = async (response) => {
     if(response.ok) {
         const data = await response.json()
         localStorage.setItem("userData", JSON.stringify(data))
-        navigateTo("/")
+        window.location.href = "/"
     } else {
         const statusMsg = await response.text()
         console.log(statusMsg)

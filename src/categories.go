@@ -3,7 +3,7 @@ package src
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -11,7 +11,7 @@ func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 	categoryName := r.URL.Query().Get("category")
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -25,10 +25,9 @@ func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE c.categoryName = ?
 	`
 
-
 	rows, err := db.Query(query, categoryName)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -42,7 +41,7 @@ func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 		)
 		post.Categories = getCategories(post.PostId)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return
 		}
 
@@ -51,7 +50,7 @@ func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 
 	jsonData, err := json.Marshal(posts)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -63,13 +62,13 @@ func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 func AllCategoriesHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
 	rows, err := db.Query("SELECT categoryName FROM categories")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	var resSlc []string
@@ -81,7 +80,7 @@ func AllCategoriesHandler(w http.ResponseWriter, r *http.Request) {
 
 	jsonData, err := json.Marshal(removeDuplicateStr(resSlc))
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
