@@ -1,5 +1,6 @@
+import { sendEvent, waitForSocketConnection } from "./chat.js"
 import { hasSession, navigateTo } from "./helpers.js"
-import { addChatbarHtml, addChatboxListener, addPostHtml } from "./home.js"
+import { addChatboxListener, addPostHtml } from "./home.js"
 import { addCommentHtml, handleCommentReactions, postReaction } from "./posts.js"
 
 
@@ -38,6 +39,7 @@ export default async function() {
             <p>Last name: ${allData.userInfo.lastName}</p>
             <p>Email: ${allData.userInfo.email}</p>
         </div>
+        <div id="msgUser" style="text-align: center;"></div>
         <ul class="toolbar">
             <li class="option" id="createdPosts">Created Posts</li>
             <li class="option" id="createdComments">Created Comments</li>
@@ -55,8 +57,11 @@ export default async function() {
             })
         })
 
+        waitForSocketConnection(window.socket, () =>{
+            sendEvent("get_chatbar_data", userData.userId)
+        })
+
         addChatboxListener()
-        addChatbarHtml(userData)
 
         if(viewType) {
             document.getElementById(viewType).classList.add("selected")
@@ -82,6 +87,15 @@ export default async function() {
             }
             handleCommentReactions(userData)
             handlePostReactions(userData)
+        }
+
+        if(userId != userData.userId) {
+            document.getElementById("msgUser").innerHTML = `
+                <button id="msgBtn" class="button-33">Message this user</button
+            `
+            document.getElementById("msgBtn").addEventListener("click", () => {
+                navigateTo(`/chat?id=${userId}`)
+            })
         }
     }
 }

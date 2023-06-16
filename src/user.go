@@ -98,7 +98,7 @@ func getUserReactedCommentsInfo(db *sql.DB, userId, currentUserId, reactionType 
 	return reactedCommentsInfo
 }
 
-func GetAllUsers(w http.ResponseWriter, r *http.Request) {
+func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var users []UserChatInfo
 	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	if err != nil {

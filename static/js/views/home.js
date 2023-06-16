@@ -1,3 +1,4 @@
+import { sendEvent, waitForSocketConnection } from "./chat.js"
 import { hasSession, navigateTo, handleResponse, router } from "./helpers.js"
 
 export default async function() {
@@ -9,6 +10,10 @@ export default async function() {
         const userData = JSON.parse(localStorage.getItem("userData"))
         const allPosts = await getPosts(userData.userId)
         const allCategories = await getCategories()
+
+        waitForSocketConnection(window.socket, () =>{
+            sendEvent("get_chatbar_data", userData.userId)
+        })
 
         document.querySelector("#app").innerHTML = `
             <div class="header">
@@ -42,10 +47,10 @@ export default async function() {
                 </select><br><br>
                 <div id="posts"></div>
             </div>
+            <div id="snackbar">Some text some message..</div>
         `
 
         addChatboxListener()
-        addChatbarHtml(userData)
         
         if(allPosts) {
             allPosts.forEach(post => {
@@ -109,6 +114,7 @@ export default async function() {
     }
 }
 
+
 const getPosts = async (userId) => {
     try {
         const response = await fetch(`get-posts?userId=${userId}`)
@@ -121,24 +127,6 @@ const getPosts = async (userId) => {
     } catch (error) {
         console.error(error)
     }
-}
-
-export const addChatbarHtml = async (userData) => {
-    const chatDiv = document.getElementById("messages")
-    const allUserInfo = await getAllUsers()
-    chatDiv.innerHTML = ""
-    allUserInfo.forEach(user => {
-        if(user.userId !== userData.userId) {
-            chatDiv.innerHTML += `
-                <div class="userBox" >
-                    <h1>${user.nickname}</h1>
-                    <header>msg here</header>
-                    <a href="/chat?id=${user.userId}" data-link>Send msg</a>
-                    <a href="/user?id=${user.userId}" data-link>Go to profile</a>
-                </div>
-            `
-        }
-    })
 }
 
 export const addChatboxListener = () => {

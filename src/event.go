@@ -32,8 +32,17 @@ type SendChatDataEvent struct {
 	Amount           int `json:"amount"`
 }
 
+type UserDataEvent struct {
+	UserId   int    `json:"userId"`
+	Nickname string `json:"nickname"`
+	Online   bool   `json:"online"`
+	LastMsgData  ReturnMessageEvent `json:"lastMsgData"`
+}
+
 const (
-	EventSendMessage = "send_message"
-	EventNewMessage  = "new_message"
-	EventGetMessages = "get_messages"
+	EventSendMessage    = "send_message"
+	EventNewMessage     = "new_message"
+	EventGetMessages    = "get_messages"
+	EventGetChatbarData = "get_chatbar_data"
+	EventUpdateChatbarData = "update_chatbar_data"
 )

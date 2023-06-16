@@ -1,3 +1,4 @@
+import { sendEvent } from "./chat.js"
 import { hasSession, navigateTo } from "./helpers.js"
 
 export default async function() {
@@ -16,6 +17,9 @@ const logout = async (userId) => {
         if(response.ok) {
             console.log("Logged out successfully")
             localStorage.removeItem("userData")
+            document.getElementById("messages").style.visibility = "hidden"
+            document.getElementById("app").style.width = "100%"
+            sendEvent("update_chatbar_data", "yes")
             navigateTo("/")
         } else {
             console.log(response.statusText)

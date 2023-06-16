@@ -1,5 +1,6 @@
+import { sendEvent, waitForSocketConnection } from "./chat.js"
 import { hasSession, navigateTo, handleResponse } from "./helpers.js"
-import { addChatbarHtml, addChatboxListener } from "./home.js"
+import { addChatboxListener } from "./home.js"
 
 export default async function() {
     const isAuthorized = await hasSession()
@@ -12,6 +13,10 @@ export default async function() {
 
         const userData = JSON.parse(localStorage.getItem("userData"))
         const allInfo = await getPostAndComments(userData.userId, postId)
+
+        waitForSocketConnection(window.socket, () =>{
+            sendEvent("get_chatbar_data", userData.userId)
+        })
 
         addToolbarAndPostHtml(userData, allInfo)
         if(allInfo.commentsInfo) {
@@ -26,7 +31,6 @@ export default async function() {
         handleCommentReactions(userData)
 
         addChatboxListener()
-        addChatbarHtml(userData)
     }
 }
 

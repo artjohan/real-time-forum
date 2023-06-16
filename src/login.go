@@ -64,6 +64,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		CookieId: sessionId,
 	}
 
+	updateUserStatus(true, response.UserId)
+
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -139,6 +141,10 @@ func LogOutHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+	
+	userIdInt, _ := strconv.Atoi(userId)
+	updateUserStatus(false, userIdInt)
+
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Ended session for user with ID: " + userId))
 }

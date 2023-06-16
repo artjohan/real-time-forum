@@ -49,6 +49,8 @@ func (m *Manager) routeEvent(event Event, c *Client) error {
 func (m *Manager) setupEventHandlers() {
 	m.handlers[EventSendMessage] = SendMessageHandler
 	m.handlers[EventGetMessages] = GetMessagesHandler
+	m.handlers[EventGetChatbarData] = GetChatbarDataHandler
+	m.handlers[EventUpdateChatbarData] = UpdateChatbarData
 }
 
 func SendMessageHandler(event Event, c *Client) error {
@@ -62,10 +64,9 @@ func SendMessageHandler(event Event, c *Client) error {
 	returnMsg.Message = chatEvent.Message
 	returnMsg.ReceiverId = chatEvent.ReceiverId
 	returnMsg.SenderId = chatEvent.SenderId
-	fmt.Println(returnMsg)
 
 	addMessageToTable(returnMsg)
-	
+
 	data, err := json.Marshal(returnMsg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal broadcast message: %v", err)
@@ -77,7 +78,6 @@ func SendMessageHandler(event Event, c *Client) error {
 
 	for client := range c.manager.clients {
 
-		fmt.Println(client.userId)
 		if client.userId == returnMsg.ReceiverId {
 			client.egress <- outgoingEvent
 		}
@@ -105,6 +105,46 @@ func GetMessagesHandler(event Event, c *Client) error {
 	return nil
 }
 
+func GetChatbarDataHandler(event Event, c *Client) error {
+	var userId int
+	if err := json.Unmarshal(event.Payload, &userId); err != nil {
+		return fmt.Errorf("bad payload in request: %v", err)
+	}
+
+	data, err := json.Marshal(getChatbarData(userId))
+	if err != nil {
+		return fmt.Errorf("failed to marshal broadcast message: %v", err)
+	}
+
+	var outgoingEvent Event
+	outgoingEvent.Payload = data
+	outgoingEvent.Type = EventGetChatbarData
+	c.egress <- outgoingEvent
+
+	return nil
+}
+
+func UpdateChatbarData(event Event, c *Client) error {
+	var msg string
+	if err := json.Unmarshal(event.Payload, &msg); err != nil {
+		return fmt.Errorf("bad payload in request: %v", err)
+	}
+	fmt.Println(msg)
+	for client := range c.manager.clients {
+		data, err := json.Marshal(getChatbarData(client.userId))
+		if err != nil {
+			return fmt.Errorf("failed to marshal broadcast message: %v", err)
+		}
+
+		var outgoingEvent Event
+		outgoingEvent.Payload = data
+		outgoingEvent.Type = EventGetChatbarData
+		client.egress <- outgoingEvent
+	}
+
+	return nil
+}
+
 func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
 	log.Println("new connection")
 
@@ -128,6 +168,7 @@ func (m *Manager) addClient(client *Client) {
 	m.Lock()
 	defer m.Unlock()
 
+	updateUserStatus(true, client.userId)
 	m.clients[client] = true
 }
 
@@ -137,6 +178,7 @@ func (m *Manager) removeClient(client *Client) {
 
 	if _, ok := m.clients[client]; ok {
 		client.connection.Close()
+		updateUserStatus(false, client.userId)
 		delete(m.clients, client)
 	}
 }

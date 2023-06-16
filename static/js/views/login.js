@@ -1,4 +1,4 @@
-import { navigateTo } from "./helpers.js"
+import { sendEvent } from "./chat.js"
 
 export default async function() {
     document.querySelector("#app").innerHTML = `
@@ -48,6 +48,7 @@ const handleResponse = async (response) => {
         const data = await response.json()
         localStorage.setItem("userData", JSON.stringify(data))
         window.location.href = "/"
+        sendEvent("update_chatbar_data", "yes")
     } else {
         const statusMsg = await response.text()
         console.log(statusMsg)
