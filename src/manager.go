@@ -130,10 +130,15 @@ func UpdateChatbarData(event Event, c *Client) error {
 		return fmt.Errorf("bad payload in request: %v", err)
 	}
 	fmt.Println(msg)
+
+	return broadCastUpdate(c)
+}
+
+func broadCastUpdate(c *Client) error {
 	for client := range c.manager.clients {
 		data, err := json.Marshal(getChatbarData(client.userId))
 		if err != nil {
-			return fmt.Errorf("failed to marshal broadcast message: %v", err)
+			log.Printf("failed to marshal broadcast message: %v", err)
 		}
 
 		var outgoingEvent Event
@@ -141,7 +146,6 @@ func UpdateChatbarData(event Event, c *Client) error {
 		outgoingEvent.Type = EventGetChatbarData
 		client.egress <- outgoingEvent
 	}
-
 	return nil
 }
 
@@ -162,6 +166,8 @@ func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
 	// start client processes
 	go client.readMessages()
 	go client.writeMessages()
+
+	broadCastUpdate(client)
 }
 
 func (m *Manager) addClient(client *Client) {
@@ -179,6 +185,7 @@ func (m *Manager) removeClient(client *Client) {
 	if _, ok := m.clients[client]; ok {
 		client.connection.Close()
 		updateUserStatus(false, client.userId)
+		broadCastUpdate(client)
 		delete(m.clients, client)
 	}
 }

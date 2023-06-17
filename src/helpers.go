@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"01.kood.tech/git/aaaspoll/real-time-forum/sqldb"
 )
 
 func GetNicknameHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,13 +26,9 @@ func GetNicknameHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserId(nicknameOrEmail string) int {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return -1
-	}
 	var userId int
-	db.QueryRow("SELECT userId FROM users WHERE nickname = ? OR email = ?", nicknameOrEmail, nicknameOrEmail).Scan(&userId)
+
+	sqldb.DB.QueryRow("SELECT userId FROM users WHERE nickname = ? OR email = ?", nicknameOrEmail, nicknameOrEmail).Scan(&userId)
 	return userId
 }
 
@@ -54,13 +52,7 @@ func getCurrentDate() string {
 }
 
 func addMessageToTable(messageData ReturnMessageEvent) {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	statement, err := db.Prepare("INSERT INTO messages (senderId, receiverId, sentDate, message) VALUES (?, ?, ?, ?)")
+	statement, err := sqldb.DB.Prepare("INSERT INTO messages (senderId, receiverId, sentDate, message) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return
@@ -75,15 +67,12 @@ func addMessageToTable(messageData ReturnMessageEvent) {
 
 func getChatData(currentChatterId, otherChatterId, amount int) ReturnChatDataEvent {
 	var returnChatData ReturnChatDataEvent
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-	}
+
 	returnChatData.CurrentChatterNickname = getNicknameById(currentChatterId)
 	returnChatData.OtherChatterNickname = getNicknameById(otherChatterId)
 
-	rows, err := db.Query(`
-		SELECT senderId, receiverId, message, sentDate FROM messages 
+	rows, err := sqldb.DB.Query(`
+		SELECT messageId, senderId, receiverId, message, sentDate FROM messages 
 		WHERE (senderId = ? AND receiverId = ?) OR (senderId = ? AND receiverId = ?)
 		ORDER BY sentDate DESC LIMIT ?`, currentChatterId, otherChatterId, otherChatterId, currentChatterId, amount)
 	if err != nil {
@@ -92,7 +81,8 @@ func getChatData(currentChatterId, otherChatterId, amount int) ReturnChatDataEve
 
 	for rows.Next() {
 		var messageData ReturnMessageEvent
-		rows.Scan(&messageData.SenderId, &messageData.ReceiverId, &messageData.Message, &messageData.SentDate)
+
+		rows.Scan(&messageData.MessageId, &messageData.SenderId, &messageData.ReceiverId, &messageData.Message, &messageData.SentDate)
 		returnChatData.Messages = append(returnChatData.Messages, messageData)
 	}
 	reverseSlice(returnChatData.Messages)
@@ -102,24 +92,19 @@ func getChatData(currentChatterId, otherChatterId, amount int) ReturnChatDataEve
 
 func getChatbarData(currentUserId int) []UserDataEvent {
 	var userDataSlc []UserDataEvent
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-	}
 
-	rows, err := db.Query(`SELECT userId, nickname, online FROM users WHERE userId != ? ORDER BY nickname ASC`, currentUserId)
+	rows, err := sqldb.DB.Query(`SELECT userId, nickname, online FROM users WHERE userId != ? ORDER BY nickname ASC`, currentUserId)
 	if err != nil {
 		log.Println(err)
 	}
 
 	for rows.Next() {
 		var userData UserDataEvent
+
 		rows.Scan(&userData.UserId, &userData.Nickname, &userData.Online)
 		userData.LastMsgData = getLastMsgData(currentUserId, userData.UserId)
 		userDataSlc = append(userDataSlc, userData)
 	}
-
-	orderBySentDate(userDataSlc)
 
 	return userDataSlc
 }
@@ -130,28 +115,17 @@ func reverseSlice(s []ReturnMessageEvent) {
 	}
 }
 
-func orderBySentDate(userDataSlc []UserDataEvent) {
-	
-}
-
 func getNicknameById(userId int) string {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-	}
 	var nickname string
-	db.QueryRow("SELECT nickname FROM users WHERE userId = ?", userId).Scan(&nickname)
+
+	sqldb.DB.QueryRow("SELECT nickname FROM users WHERE userId = ?", userId).Scan(&nickname)
 	return nickname
 }
 
 func getLastMsgData(currentUserId, senderId int) ReturnMessageEvent {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-	}
-
 	var lastMsgData ReturnMessageEvent
-	err = db.QueryRow(`
+
+	err := sqldb.DB.QueryRow(`
 		SELECT message, senderId, receiverId, sentDate FROM messages
 		WHERE (senderId = ? AND receiverId = ?) OR (senderId = ? AND receiverId = ?)
 		ORDER BY sentDate DESC`, senderId, currentUserId, currentUserId, senderId).Scan(&lastMsgData.Message, &lastMsgData.SenderId, &lastMsgData.ReceiverId, &lastMsgData.SentDate)
@@ -165,12 +139,7 @@ func getLastMsgData(currentUserId, senderId int) ReturnMessageEvent {
 }
 
 func updateUserStatus(newStatus bool, userId int) {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-	}
-
-	statement, err := db.Prepare("UPDATE users SET online = ? WHERE userID = ?")
+	statement, err := sqldb.DB.Prepare("UPDATE users SET online = ? WHERE userID = ?")
 	if err != nil {
 		log.Println(err)
 		return

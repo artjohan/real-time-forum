@@ -1,7 +1,8 @@
-import { sendEvent, waitForSocketConnection } from "./chat.js"
-import { hasSession, navigateTo } from "./helpers.js"
+import { sendEvent, waitForSocketConnection } from "./ws.js"
+import { hasSession } from "./helpers.js"
 import { addChatboxListener, addPostHtml } from "./home.js"
 import { addCommentHtml, handleCommentReactions, postReaction } from "./posts.js"
+import { navigateTo, navigateToWithoutSavingHistory } from "./router.js"
 
 
 export default async function() {
@@ -11,49 +12,18 @@ export default async function() {
         return
     } else {
         const url = new URL(window.location.href)
-        const userId = url.searchParams.get("id")
-        const viewType = url.searchParams.get("view")
-        const userData = JSON.parse(localStorage.getItem("userData"))
 
-        const allData = await getUserData(userId, userData.userId)
-        document.querySelector("#app").innerHTML = `
-        <div class="header">
-            <div class="nameAndChatBtncontainer">
-                <div>
-                    <a>Welcome to the Forum, </a>
-                    <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
-                </div>
-                <button id="chatBtn">Show chat</button>
-            </div><br><br>
-            <a href="/logout" data-link>Log out</a>
-            <div style="text-align: center;">
-                <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
-            </div>
-        </div>
-        <div style="text-align: center;">
-            <h1 style="font-size: 50px;">User information</h1>
-            <p>Nickname: ${allData.userInfo.nickname}</p>
-            <p>Age: ${allData.userInfo.age}</p>
-            <p>Gender: ${allData.userInfo.gender}</p>
-            <p>First name: ${allData.userInfo.firstName}</p>
-            <p>Last name: ${allData.userInfo.lastName}</p>
-            <p>Email: ${allData.userInfo.email}</p>
-        </div>
-        <div id="msgUser" style="text-align: center;"></div>
-        <ul class="toolbar">
-            <li class="option" id="createdPosts">Created Posts</li>
-            <li class="option" id="createdComments">Created Comments</li>
-            <li class="option" id="likedPosts">Liked Posts</li>
-            <li class="option" id="likedComments">Liked Comments</li>
-            <li class="option" id="dislikedPosts">Disliked Posts</li>
-            <li class="option" id="dislikedComments">Disliked Comments</li>
-        </ul>
-        <div id="selectContent"></div>
-        `
-        const contentDiv = document.getElementById("selectContent")
+        const viewedUserId = url.searchParams.get("id")
+        const viewType = url.searchParams.get("view")
+
+        const userData = JSON.parse(localStorage.getItem("userData"))
+        const viewedUserData = await getDataFromServer(`/get-user-info?userId=${viewedUserId}`)
+
+        addUserPageHtml(userData, viewedUserData, viewedUserId)
+        
         document.querySelectorAll(".option").forEach(option => {
             option.addEventListener("click", (e) => {
-                navigateTo(`/user?id=${userId}&view=${e.target.id}`)
+                navigateToWithoutSavingHistory(`/user?id=${viewedUserId}&view=${e.target.id}`)
             })
         })
 
@@ -64,46 +34,34 @@ export default async function() {
         addChatboxListener()
 
         if(viewType) {
-            document.getElementById(viewType).classList.add("selected")
-            switch (viewType) {
-                case "createdPosts":
-                    addCreatedPostsHtml(contentDiv, allData)
-                    break;
-                case "createdComments":
-                    addCreatedCommentsHtml(contentDiv, allData)
-                    break;
-                case "likedPosts":
-                    addLikedPostsHtml(contentDiv, allData)
-                    break;
-                case "likedComments":
-                    addLikedCommentsHtml(contentDiv, allData)
-                    break;
-                case "dislikedPosts":
-                    addDislikedPostsHtml(contentDiv, allData)
-                    break;
-                case "dislikedComments":
-                    addDislikedCommentsHtml(contentDiv, allData)
-                    break;
-            }
-            handleCommentReactions(userData)
-            handlePostReactions(userData)
-        }
-
-        if(userId != userData.userId) {
-            document.getElementById("msgUser").innerHTML = `
-                <button id="msgBtn" class="button-33">Message this user</button
-            `
-            document.getElementById("msgBtn").addEventListener("click", () => {
-                navigateTo(`/chat?id=${userId}`)
-            })
+            addViewTypeHtml(viewType, userData, viewedUserId)
         }
     }
 }
 
-const addCreatedPostsHtml = (contentDiv, allData) => {
+const addViewTypeHtml = (viewType, userData, viewedUserId) => {
+    document.getElementById(viewType).classList.add("selected")
+
+    const viewTypeFunctions = {
+        createdPosts: addCreatedPostsHtml,
+        createdComments: addCreatedCommentsHtml,
+        likedPosts: addLikedPostsHtml,
+        likedComments: addLikedCommentsHtml,
+        dislikedPosts: addDislikedPostsHtml,
+        dislikedComments: addDislikedCommentsHtml,
+    }
+
+    viewTypeFunctions[viewType](document.getElementById("selectContent"), viewedUserId, userData.userId)
+    
+    handleCommentReactions(userData)
+    handlePostReactions(userData)
+}
+
+const addCreatedPostsHtml = async (contentDiv, viewedUserId, currentUserId) => {
+    const createdPosts = await getDataFromServer(`/get-created-posts?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
     contentDiv.innerHTML = ""
-    if(allData.createdPosts) {
-        allData.createdPosts.forEach(post => {
+    if(createdPosts) {
+        createdPosts.forEach(post => {
             addPostHtml(post, "selectContent")
         })
     } else {
@@ -111,10 +69,11 @@ const addCreatedPostsHtml = (contentDiv, allData) => {
     }
 }
 
-const addCreatedCommentsHtml = (contentDiv, allData) => {
+const addCreatedCommentsHtml = async (contentDiv, viewedUserId, currentUserId) => {
+    const createdComments = await getDataFromServer(`/get-created-comments?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
     contentDiv.innerHTML = ""
-    if(allData.createdComments) {
-        allData.createdComments.forEach(comment => {
+    if(createdComments) {
+        createdComments.forEach(comment => {
             addParentPostHtml(comment.parentPostInfo, "selectContent", "User commented:")
             comment.commentsInfo.forEach(commentInfo => {
                 addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
@@ -125,10 +84,11 @@ const addCreatedCommentsHtml = (contentDiv, allData) => {
     }
 }
 
-const addLikedPostsHtml = (contentDiv, allData) => {
+const addLikedPostsHtml = async (contentDiv, viewedUserId, currentUserId) => {
+    const likedPosts = await getDataFromServer(`/get-liked-posts?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
     contentDiv.innerHTML = ""
-    if(allData.likedPosts) {
-        allData.likedPosts.forEach(post => {
+    if(likedPosts) {
+        likedPosts.forEach(post => {
             addPostHtml(post, "selectContent")
         })
     } else {
@@ -136,10 +96,11 @@ const addLikedPostsHtml = (contentDiv, allData) => {
     }
 }
 
-const addLikedCommentsHtml = (contentDiv, allData) => {
+const addLikedCommentsHtml = async (contentDiv, viewedUserId, currentUserId) => {
+    const likedComments = await getDataFromServer(`/get-liked-comments?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
     contentDiv.innerHTML = ""
-    if(allData.likedComments) {
-        allData.likedComments.forEach(comment => {
+    if(likedComments) {
+        likedComments.forEach(comment => {
             addParentPostHtml(comment.parentPostInfo, "selectContent", "User liked:")
             comment.commentsInfo.forEach(commentInfo => {
                 addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
@@ -150,10 +111,11 @@ const addLikedCommentsHtml = (contentDiv, allData) => {
     }
 }
 
-const addDislikedPostsHtml = (contentDiv, allData) => {
+const addDislikedPostsHtml = async (contentDiv, viewedUserId, currentUserId) => {
+    const dislikedPosts = await getDataFromServer(`/get-disliked-posts?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
     contentDiv.innerHTML = ""
-    if(allData.dislikedPosts) {
-        allData.dislikedPosts.forEach(post => {
+    if(dislikedPosts) {
+        dislikedPosts.forEach(post => {
             addPostHtml(post, "selectContent")
         })
     } else {
@@ -161,10 +123,11 @@ const addDislikedPostsHtml = (contentDiv, allData) => {
     }
 }
 
-const addDislikedCommentsHtml = (contentDiv, allData) => {
+const addDislikedCommentsHtml = async (contentDiv, viewedUserId, currentUserId) => {
+    const dislikedComments = await getDataFromServer(`/get-disliked-comments?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
     contentDiv.innerHTML = ""
-    if(allData.dislikedComments) {
-        allData.dislikedComments.forEach(comment => {
+    if(dislikedComments) {
+        dislikedComments.forEach(comment => {
             addParentPostHtml(comment.parentPostInfo, "selectContent", "User disliked:")
             comment.commentsInfo.forEach(commentInfo => {
                 addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
@@ -175,9 +138,9 @@ const addDislikedCommentsHtml = (contentDiv, allData) => {
     }
 }
 
-const getUserData = async (userId, currentUserId) => {
+const getDataFromServer = async (url) => {
     try {
-        const response = await fetch(`/get-user-data?userId=${userId}&currentUser=${currentUserId}`)
+        const response = await fetch(url)
         if (response.ok) {
             const data = await response.json()
             return data
@@ -191,7 +154,7 @@ const getUserData = async (userId, currentUserId) => {
 
 const addParentPostHtml = (parentPostInfo, contentDivId, descMsg) => {
     document.querySelector(`#${contentDivId}`).innerHTML += `
-        <div style="text-align: center;">
+        <div style="text-align: center; overflow-wrap: break-word;">
             <br><br>
             <a style="font-size: 50px;">Under post: </a>
             <a href="/posts?id=${parentPostInfo.postId}" data-link style="font-size: 50px;">${parentPostInfo.postHeader}</a>
@@ -231,4 +194,47 @@ const handlePostReactions = (userData) => {
             postReaction(parseInt(postDislikeBtn.value), userData, "dislike", "post")
         })
     })
+}
+
+const addUserPageHtml = (userData, viewedUserData, viewedUserId) => {
+    document.querySelector("#app").innerHTML = `
+        <div class="header">
+            <div>
+                <a>Welcome to the Forum, </a>
+                <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
+            </div>
+            <div class="headerBtnsContainer">
+                <a class="button-33" href="/logout" data-link>Log out</a> 
+                <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
+                <button id="chatBtn" style="height: fit-content;" class="button-33"></button>
+            </div>
+        </div>
+        <div style="text-align: center;">
+            <h1 style="font-size: 50px;">${viewedUserData.nickname}${viewedUserData.online ? "🟢" : ""}</h1>
+            <p>Age: ${viewedUserData.age}</p>
+            <p>Gender: ${viewedUserData.gender}</p>
+            <p>First name: ${viewedUserData.firstName}</p>
+            <p>Last name: ${viewedUserData.lastName}</p>
+            <p>Email: ${viewedUserData.email}</p>
+        </div>
+        <div id="msgUser" style="text-align: center;"></div>
+        <ul class="toolbar">
+            <li class="option" id="createdPosts">Created Posts</li>
+            <li class="option" id="createdComments">Created Comments</li>
+            <li class="option" id="likedPosts">Liked Posts</li>
+            <li class="option" id="likedComments">Liked Comments</li>
+            <li class="option" id="dislikedPosts">Disliked Posts</li>
+            <li class="option" id="dislikedComments">Disliked Comments</li>
+        </ul>
+        <div id="selectContent"></div>
+    `
+    
+    if(viewedUserId != userData.userId) {
+        document.getElementById("msgUser").innerHTML = `
+            <button id="msgBtn" class="button-33">Message this user</button
+        `
+        document.getElementById("msgBtn").addEventListener("click", () => {
+            navigateTo(`/chat?id=${viewedUserId}`)
+        })
+    }
 }

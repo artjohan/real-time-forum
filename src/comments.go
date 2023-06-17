@@ -1,10 +1,11 @@
 package src
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"01.kood.tech/git/aaaspoll/real-time-forum/sqldb"
 )
 
 type CreateCommentInfo struct {
@@ -38,13 +39,7 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	statement, err := db.Prepare("INSERT INTO comments (content, postId, userId, creationDate) VALUES (?, ?, ?, ?)")
+	statement, err := sqldb.DB.Prepare("INSERT INTO comments (content, postId, userId, creationDate) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return
@@ -56,20 +51,13 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatePostComments(db, createCommentInfo.PostId)
+	updatePostComments(createCommentInfo.PostId)
 }
 
 func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	postId := r.URL.Query().Get("postId")
 	userId := r.URL.Query().Get("userId")
 	var postAndCommentsInfo GetPostAndCommentsInfo
-	postAndCommentsInfo.ParentPostInfo = getParentPostInfo(userId, postId)
-
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 
 	query := `
 		SELECT c.commentId, c.content AS commentContent, 
@@ -79,7 +67,8 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		INNER JOIN users AS u ON c.userId = u.userId
 		WHERE c.postId = ` + postId
 
-	postAndCommentsInfo.CommentsInfo = getCommentsByQuery(db, query, userId)
+	postAndCommentsInfo.CommentsInfo = getCommentsByQuery(query, userId)
+	postAndCommentsInfo.ParentPostInfo = getParentPostInfo(userId, postId)
 
 	jsonData, err := json.Marshal(postAndCommentsInfo)
 	if err != nil {
@@ -92,8 +81,8 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func getCommentsByQuery(db *sql.DB, query, userId string) []CommentInfo {
-	rows, err := db.Query(query)
+func getCommentsByQuery(query, userId string) []CommentInfo {
+	rows, err := sqldb.DB.Query(query)
 	if err != nil {
 		log.Println(err)
 	}
@@ -110,7 +99,7 @@ func getCommentsByQuery(db *sql.DB, query, userId string) []CommentInfo {
 			log.Println(err)
 		}
 
-		userReaction := userReactionType(db, comment.CommentId, userId, "comment")
+		userReaction := userReactionType(comment.CommentId, userId, "comment")
 		if userReaction != "" {
 			if userReaction == "like" {
 				comment.LikedByCurrentUser = true
@@ -126,10 +115,6 @@ func getCommentsByQuery(db *sql.DB, query, userId string) []CommentInfo {
 
 func getParentPostInfo(userId, postId string) GetPostInfo {
 	var parentPost GetPostInfo
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-	}
 
 	query := `
 		SELECT p.postId, p.header AS postHeader, p.content AS postContent, 
@@ -140,14 +125,14 @@ func getParentPostInfo(userId, postId string) GetPostInfo {
 		WHERE p.postId = ?
 	`
 
-	err = db.QueryRow(query, postId).Scan(&parentPost.PostId, &parentPost.PostHeader, &parentPost.PostContent, &parentPost.CreatorId,
+	err := sqldb.DB.QueryRow(query, postId).Scan(&parentPost.PostId, &parentPost.PostHeader, &parentPost.PostContent, &parentPost.CreatorId,
 		&parentPost.CreatorNickname, &parentPost.Likes, &parentPost.Dislikes, &parentPost.Comments,
 		&parentPost.CreationDate)
 
 	if err != nil {
 		log.Println(err)
 	}
-	userReaction := userReactionType(db, parentPost.PostId, userId, "post")
+	userReaction := userReactionType(parentPost.PostId, userId, "post")
 	if userReaction != "" {
 		if userReaction == "like" {
 			parentPost.LikedByCurrentUser = true
@@ -158,16 +143,16 @@ func getParentPostInfo(userId, postId string) GetPostInfo {
 	return parentPost
 }
 
-func updatePostComments(db *sql.DB, postId int) {
+func updatePostComments(postId int) {
 	query := "UPDATE posts SET comments = comments + 1 WHERE postId = ?"
-	_, err := db.Exec(query, postId)
+	_, err := sqldb.DB.Exec(query, postId)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func userReactionType(db *sql.DB, postOrCommentId int, userId, postType string) string {
+func userReactionType(postOrCommentId int, userId, postType string) string {
 	var reaction string
-	db.QueryRow("SELECT reactionType FROM reactions WHERE "+postType+"Id=? AND userId=?", postOrCommentId, userId).Scan(&reaction)
+	sqldb.DB.QueryRow("SELECT reactionType FROM reactions WHERE "+postType+"Id=? AND userId=?", postOrCommentId, userId).Scan(&reaction)
 	return reaction
 }

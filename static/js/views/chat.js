@@ -1,7 +1,9 @@
-import { Event, hasSession, navigateTo } from "./helpers.js"
+import { hasSession, showNotificationSnackbar } from "./helpers.js"
 import { addChatboxListener } from "./home.js"
+import { navigateTo } from "./router.js"
+import { sendEvent, waitForSocketConnection } from "./ws.js"
 
-var amount, scrolling, scrollEnd, scrollHeightBeforeLoad
+var amount, scrolling, scrollEnd, scrollHeightBeforeLoad, receiverId
 
 export default async function() {
     const isAuthorized = await hasSession()
@@ -9,12 +11,13 @@ export default async function() {
         navigateTo("/login")
         return
     } else {
+        const url = new URL(window.location.href)
         amount = 10
         scrollEnd = false
+        receiverId = url.searchParams.get("id")
+
         const userData = JSON.parse(localStorage.getItem("userData"))
-        const url = new URL(window.location.href)
-        const receiverId = url.searchParams.get("id")
-        const nickname = await getNicknameById(receiverId)
+        const otherChatterNickname = await getNicknameById(receiverId)
 
         if(receiverId == userData.userId) {
             navigateTo("/")
@@ -26,64 +29,55 @@ export default async function() {
             sendEvent("get_chatbar_data", userData.userId)
         })
 
-        document.querySelector("#app").innerHTML = `
-            <div class="header"><br>
-                <div class="nameAndChatBtncontainer">
-                    <div>
-                        <a>Welcome to the Forum, </a>
-                        <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
-                    </div>
-                    <button id="chatBtn"></button>
-                </div><br><br>
-                <a href="/logout" data-link>Log out</a>
-                <div style="text-align: center;">
-                    <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
-                </div>
-            </div>
-            <div style="text-align: center;">
-                <h1 style="font-size: 50px;" id="header">Chatting with ${nickname}</h1>
-                <div class="chatBox" id="chatBox"></div><br>
-                <form id="sendMsg">
-                    <textarea style="width: 100%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; height: 60px; font-size: 20px; resize: none;" id="msgContent" placeholder="Message" type="text" required></textarea><br><br>
-                    <button class="button-33" type="submit">Send</button>
-                </form>
-            </div>
-            <div id="snackbar"></div>
-        `
+        addChatpageHtml(otherChatterNickname, userData)
 
         addChatboxListener()
 
-        const msgBody = {}
-
-        const sendMsgForm = document.getElementById("sendMsg")
-        sendMsgForm.addEventListener("submit", async (event) => {
-            event.preventDefault()
-
-            msgBody["senderId"] = userData.userId
-            msgBody["receiverId"] = parseInt(receiverId)
-            msgBody["message"] = document.getElementById("msgContent").value
-
-            sendEvent("send_message", msgBody)
-            sendMsgForm.reset()
-        })
+        addMessageSending(userData)
 
         document.getElementById("chatBox").addEventListener("scroll", () => {
             throttle(loadAdditionalMessages(parseInt(userData.userId), parseInt(receiverId)), 50)
         })
-
     }
 }
 
-const loadAdditionalMessages = (userId, receiverId) => {
+const addMessageSending = (userData) => {
+    const msgBody = {}
+    const sendMsgForm = document.getElementById("sendMsg")
+
+    sendMsgForm.addEventListener("submit", async (event) => {
+        event.preventDefault()
+        submitMsgForm()
+    })
+
+    const textArea = document.getElementById("msgContent")
+    textArea.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault()
+          submitMsgForm()
+        }
+    })
+
+    const submitMsgForm = () => {
+        msgBody["senderId"] = userData.userId
+        msgBody["receiverId"] = parseInt(receiverId)
+        msgBody["message"] = document.getElementById("msgContent").value
+
+        sendEvent("send_message", msgBody)
+        sendMsgForm.reset()
+    }
+}
+
+const loadAdditionalMessages = (userId) => {
     if(document.getElementById("chatBox").scrollTop === 0 && !scrollEnd) {
         amount += 10
         scrollHeightBeforeLoad = document.getElementById("chatBox").scrollHeight
-        getMessages(userId, receiverId, amount)
+        getMessages(userId, parseInt(receiverId), amount)
         scrolling = true
     }
 }
 
-const getNicknameById = async (userId) => {
+export const getNicknameById = async (userId) => {
     try {
         const response = await fetch(`get-nickname?id=${userId}`)
         if (response.ok) {
@@ -108,20 +102,6 @@ function throttle(func, wait) {
     }
 }
 
-const showNotificationSnackbar = async (msgData) => {
-    var snackBar = document.getElementById("snackbar")
-    var senderNickname = await getNicknameById(msgData.senderId)
-
-    snackBar.className = "show"
-    snackBar.innerHTML = `New message from ${senderNickname}! Click here to view!`
-
-    snackBar.addEventListener("click", () => {
-        navigateTo(`/chat?id=${msgData.senderId}`)
-    })
-
-    setTimeout(function(){ snackBar.className = snackBar.className.replace("show", "") }, 3000)
-}
-
 const getMessages = (currentChatterId, otherChatterId, amount) => {
     const payload = {
         currentChatterId, 
@@ -131,40 +111,47 @@ const getMessages = (currentChatterId, otherChatterId, amount) => {
     sendEvent("get_messages", payload)
 }
 
-export function waitForSocketConnection(socket, callback){
-    setTimeout(
-        function () {
-            if (socket && socket.readyState === 1) {
-                console.log("Connection is made")
-                if (callback != null){
-                    callback();
-                }
-            } else {
-                console.log("wait for connection...")
-                waitForSocketConnection(socket, callback);
-            }
-
-        }, 5)
-}
-
 const updateMessages = (messages) => {
     const chatBox = document.getElementById("chatBox")
-    const url = new URL(window.location.href)
-    const receiverId = url.searchParams.get("id")
     chatBox.innerHTML = ""
-    var msgType
+    var msgType, prevMsg, prevMsgType
+
     messages.forEach(message => {
         if(message.receiverId != receiverId) {
             msgType = "Received"
         } else {
             msgType = "Sent"
         }
+
+        if(!prevMsg || timePassed(prevMsg, message) > 900000) {
+            chatBox.innerHTML += `
+                <div>
+                    <a>${message.sentDate}</a>
+                </div><br><br><br>
+            `
+        } else if(prevMsg && timePassed(prevMsg, message) > 300000 && prevMsgType === msgType) {
+            chatBox.innerHTML += `
+                <br>
+            `
+        }
+
         chatBox.innerHTML += `
-            <div class="msgBox${msgType}">
-                <a style="font-size: 25px">${message.message}</a>
+            <div class="messageContainer ${msgType === 'Received' ? 'received' : 'sent'}">
+                <div id="msgBox" class="msgBox${msgType}" data-linked="${message.messageId}">
+                    <a style="font-size: 25px; white-space: pre-wrap;">${message.message.trim()}</a>
+                </div>
+                <div id="timeBox" class="timeBox${msgType}" data-link="${message.messageId}">
+                    <a>${message.sentDate}</a>
+                </div>
             </div>
-    `
+        `
+
+        prevMsg = message
+        prevMsgType = msgType
     })
+
+    addHoverListeners()
+
     if(!scrolling) {
         chatBox.scrollTop = chatBox.scrollHeight
     } else {
@@ -176,55 +163,77 @@ const updateMessages = (messages) => {
     }
 }
 
-export function routeEvent(event) {
-    if(event.type === undefined) {
-        console.log("no type field in the event")
+const addHoverListeners = () => {
+    const hoveredDivs = document.querySelectorAll('#msgBox');
+
+    hoveredDivs.forEach(hoveredDiv => {
+    hoveredDiv.addEventListener('mouseenter', (event) => {
+        const linkedId = event.target.getAttribute('data-linked');
+        const linkedDiv = document.querySelector(`#timeBox[data-link="${linkedId}"]`);
+
+        // Change the style of the linked div
+        linkedDiv.style.visibility = 'visible';
+    });
+
+    hoveredDiv.addEventListener('mouseleave', (event) => {
+        const linkedId = event.target.getAttribute('data-linked');
+        const linkedDiv = document.querySelector(`#timeBox[data-link="${linkedId}"]`);
+
+        // Reset the style of the linked div
+        linkedDiv.style.visibility = 'hidden';
+        });
+    });
+}
+
+const timePassed = (prevMsg, currentMsg) => {
+    const prevDate = new Date(prevMsg.sentDate)
+    const currentDate = new Date(currentMsg.sentDate)
+
+    return Math.abs(currentDate.getTime() - prevDate.getTime())
+}
+
+export const handleSendMessage = (payload) => {
+    console.log("sent message")
+    amount++
+    getMessages(payload.senderId, payload.receiverId, amount)
+    sendEvent("get_chatbar_data", payload.senderId)
+}
+
+export const handleNewMessage = (payload) => {
+    console.log("received message")
+    const fullPath = window.location.pathname + window.location.search
+    if(fullPath === `/chat?id=${payload.senderId}`) {
+        amount++
+        getMessages(payload.senderId, payload.receiverId, amount)
+    } else {
+        showNotificationSnackbar(payload)
     }
+    sendEvent("get_chatbar_data", payload.receiverId)
+}
 
-    switch(event.type) {
-        case "send_message":
-            console.log("sent message")
-            amount++
-            getMessages(event.payload.senderId, event.payload.receiverId, amount)
-            sendEvent("get_chatbar_data", event.payload.senderId)
-            break
-        case "new_message":
-            console.log("received message")
-            const fullPath = window.location.pathname + window.location.search
-            if(fullPath === `/chat?id=${event.payload.senderId}`) {
-                amount++
-                getMessages(event.payload.senderId, event.payload.receiverId, amount)
-            } else {
-                showNotificationSnackbar(event.payload)
-            }
-            sendEvent("get_chatbar_data", event.payload.receiverId)
-            break
-        case "get_messages":
-            console.log("retrieving messages")
-            if(event.payload.messages) {
-                updateMessages(event.payload.messages)
-            }
-            break
-        case "get_chatbar_data":
-            console.log("getting chatbar data")
-            if(event.payload instanceof Array) {
-                event.payload.sort((a, b) => {
-                    const dateA = new Date(a.lastMsgData.sentDate)
-                    const dateB = new Date(b.lastMsgData.sentDate)
+export const handleGetMessages = (payload) => {
+    if(payload.messages) {
+        updateMessages(payload.messages)
+        console.log("successfully retrieved messages")
+    } else {
+        console.log("retrieving messages")
+    }
+}
 
-                    if (a.lastMsgData.sentDate === '') return 1
-                    if (b.lastMsgData.sentDate === '') return -1
-                    return dateB - dateA;
-                })
-                addChatbarHtml(event.payload)
-            }
-            break
-        case "update_chatbar_data":
-            console.log("updating chatbar data")
-            break
-        default:
-            alert("unsupported message type")
-            break
+export const handleGetChatbarData = (payload) => {
+    if(payload instanceof Array) {
+        console.log("successfully retrieved chatbar data")
+        payload.sort((a, b) => {
+            const dateA = new Date(a.lastMsgData.sentDate)
+            const dateB = new Date(b.lastMsgData.sentDate)
+
+            if (a.lastMsgData.sentDate === '') return 1
+            if (b.lastMsgData.sentDate === '') return -1
+            return dateB - dateA;
+        })
+        addChatbarHtml(payload)
+    } else {
+        console.log("retrieving chatbar data")
     }
 }
 
@@ -235,33 +244,47 @@ const addChatbarHtml = async (users) => {
         var lastMsgText = ""
         if(user.lastMsgData.message) {
             if(user.userId === user.lastMsgData.senderId) {
-                lastMsgText = `${user.nickname} said: ${user.lastMsgData.message}`
+                lastMsgText = `${user.nickname} said: ${user.lastMsgData.message.substring(0, 20)}${user.lastMsgData.message.length > 25 ? "..." : ""}`
             } else {
-                lastMsgText = `You said: ${user.lastMsgData.message}`
+                lastMsgText = `You said: ${user.lastMsgData.message.substring(0, 20)}${user.lastMsgData.message.length > 25 ? "..." : ""}`
             }
         }
 
-        var userStatus
-        if(user.online) {
-            userStatus = "Online"
-        } else {
-            userStatus = "Offline"
-        }
         chatDiv.innerHTML += `
-            <div class="userBox${userStatus}" >
-                <h1>${user.nickname}</h1>
-                <header>${lastMsgText}</header>
-                <a href="/chat?id=${user.userId}" data-link>Send msg</a>
-                <a href="/user?id=${user.userId}" data-link>Go to profile</a>
+            <div class="userBox" >
+                <h1>${user.nickname}${user.online ? "🟢" : ""}</h1>
+                <header>${lastMsgText}</header><br>
+                <a class="button-33" style="width: 30%;" href="/chat?id=${user.userId}" data-link>Chat</a>
+                <a class="button-33" style="width: 30%;" href="/user?id=${user.userId}" data-link>Profile</a><br><br>
             </div>
         `
     })
 }
 
-export function sendEvent(eventName, payload) {
-    const event = new Event(eventName, payload)
-
-    window.socket.send(JSON.stringify(event))
-    routeEvent(event)
+const addChatpageHtml = (nickname, userData) => {
+    document.querySelector("#app").innerHTML = `
+            <div class="header">
+                <div>
+                    <a>Welcome to the Forum, </a>
+                    <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
+                </div>
+                <div class="headerBtnsContainer">
+                    <a class="button-33" href="/logout" data-link>Log out</a> 
+                    <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
+                    <button id="chatBtn" style="height: fit-content;" class="button-33"></button>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <h1 style="font-size: 50px;" id="header">Chatting with ${nickname}</h1>
+                <div class="chatBox" id="chatBox"></div><br>
+                <form id="sendMsg">
+                    <div class="messageContainer">
+                        <textarea id="msgContent" class="createPostHeaderAndTags" style="height: 60px; width: 95%; resize: none;" placeholder="Message" type="text" required></textarea><br><br>
+                        <button class="button-33" style="margin-left: 10px;" type="submit">Send</button>
+                    </div>
+                </form>
+            </div>
+            <div id="snackbar"></div>
+        `
 }
 

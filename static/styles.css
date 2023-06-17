@@ -20,7 +20,7 @@ body {
     padding: 30px;
     margin-bottom: 27px;
     display: flex;
-    height: auto;
+    height: fit-content;
 }
 
 .title {
@@ -29,23 +29,25 @@ body {
     height: 50px;
     position: relative;
     top: 0px;
+    width: 50%;
     overflow-wrap: break-word;
-    flex-basis: 50%;
+    height: fit-content;
 }
 
-.nameAndChatBtncontainer {
+.headerBtnsContainer {
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
 .threadcats {
     text-align: center;
-    flex-basis: 20%;
+    width: 20%;
 }
 
 .threadinfo {
     text-align: center;
-    flex-basis: 20%;
+    width: 20%;
 }
 
 .postbox {
@@ -63,14 +65,14 @@ body {
     padding: 15px;
     border-radius: 5px;
     background-color: rgb(0, 204, 255);
-    flex-basis: 10%;
+    width: 10%;
     font-size: 20px;
     border: 2px solid #1f276d54;
 }
 
 .reactionbox {
     text-align: center;
-    flex-basis: 20%;
+    width: 20%;
     font-size: 15px;
     margin-top: 30px;
 }
@@ -109,13 +111,14 @@ body {
 }
 
 .postcontent {
-    flex-basis: 70%;
+    width: 70%;
+    height: fit-content;
     font-size: 20px;
     text-align: left;
     margin-left: 20px;
     margin-right: 20px;
-    white-space: pre-line;
     display: block;
+    overflow-wrap: break-word;
 }
 
 .header {
@@ -131,6 +134,13 @@ body {
     height: 30px;
 }
 
+.catSelect {
+    background-color: #c2e6fb;
+    border: #7a7fc0 solid 2px;
+    border-radius: 5px;
+    font-size: 20px;
+}
+
 .button-33 {
     background-color: #c2e6fb;
     border-radius: 100px;
@@ -142,7 +152,6 @@ body {
     padding: 7px 20px;
     text-align: center;
     text-decoration: none;
-    transition: all 250ms;
     border: 0;
     font-size: 16px;
     user-select: none;
@@ -153,6 +162,23 @@ body {
 .button-33:hover {
     box-shadow: rgba(44,187,99,.35) 0 -25px 18px -14px inset,rgba(44,187,99,.25) 0 1px 2px,rgba(44,187,99,.25) 0 2px 4px,rgba(44,187,99,.25) 0 4px 8px,rgba(44,187,99,.25) 0 8px 16px,rgba(44,187,99,.25) 0 16px 32px;
     transform: scale(1.05);
+}
+
+.createPostContent {
+    width: 100%;
+    background-color: #c2e6fb;
+    border: #7a7fc0 solid 2px;
+    border-radius: 5px;
+    height: 100px;
+    font-size: 20px;
+}
+
+.createPostHeaderAndTags {
+    width: 50%;
+    background-color: #c2e6fb;
+    border: #7a7fc0 solid 2px;
+    border-radius: 5px;
+    font-size: 20px;
 }
 
 .toolbar {
@@ -196,20 +222,13 @@ body {
     width: 25%;
 }
 
-.userBoxOnline {
+.userBox {
     border: 3px black solid;
     border-radius: 10px;
-    text-align: left;
+    text-align: center;
     margin-bottom: 10px;
-    background-color: rgb(9, 199, 9);
-}
-
-.userBoxOffline {
-    border: 3px black solid;
-    border-radius: 10px;
-    text-align: left;
-    margin-bottom: 10px;
-    background-color: rgb(182, 182, 182);
+    background-color: rgb(140, 195, 231);
+    overflow-wrap: break-word;
 }
 
 .chatBox {
@@ -217,74 +236,130 @@ body {
     background-color: #c2e6fb; 
     border: #7a7fc0 solid 2px; 
     border-radius: 5px; 
-    height: 40%;
-    overflow-y: scroll;
+    height: 60%;
+    overflow: auto;
 }
 
 .msgBoxSent {
     background-color: rgb(7, 161, 189);
     border: black solid 1px; 
-    border-radius: 5px;
+    border-radius: 20px;
+    max-width: 60%;
     width: fit-content;
     height: fit-content;
-    margin-left: auto;
+    margin-left: 10;
     padding: 10px;
     margin-right: 10;
-    margin-top: 10;
+    margin-bottom: 7;
+    order: 2;
+    text-align: left;
+    overflow-wrap: break-word;
 }
 
 .msgBoxReceived {
     background-color: rgb(224, 224, 224);
     border: black solid 1px; 
-    border-radius: 5px;
+    border-radius: 20px;
+    max-width: 60%;
     width: fit-content;
     height: fit-content;
-    margin-right: auto;
+    margin-right: 10;
     padding: 10px;
     margin-left: 10;
-    margin-top: 10;
+    margin-bottom: 7;
+    order: 1;
+    text-align: left;
+    overflow-wrap: break-word;
+}
+
+.timeBoxSent {
+    visibility: hidden;
+    color: grey;
+    margin-right: 10px;
+    order: 1;
+    width: 50%;
+    text-align: right;
+}
+
+.timeBoxReceived {
+    visibility: hidden;
+    color: grey;
+    margin-left: 10px;
+    order: 2;
+    width: 50%;
+    text-align: left;
+}
+
+.messageContainer {
+    display: flex;
+    align-items: center;
+}
+
+.received {
+    justify-content: flex-start;
+}
+  
+.sent {
+    justify-content: flex-end;
 }
 
 #snackbar {
-    display: none; /* Hidden by default. Visible on click */
-    min-width: 250px; /* Set a default minimum width */
-    margin-left: -125px; /* Divide value of min-width by 2 */
-    background-color: #333; /* Black background color */
-    color: #fff; /* White text color */
-    text-align: center; /* Centered text */
-    border-radius: 2px; /* Rounded borders */
-    padding: 16px; /* Padding */
-    position: fixed; /* Sit on top of the screen */
-    z-index: 1; /* Add a z-index if needed */
-    left: 50%; /* Center the snackbar */
-    top: 30px; /* 30px from the bottom */
-  }
+    display: none;
+    min-width: 250px;
+    margin-left: -125px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 2px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1;
+    left: 50%;
+    top: 30px;
+}
   
-  /* Show the snackbar when clicking on a button (class added with JavaScript) */
-  #snackbar.show {
+#snackbar.show {
     display: block;
     cursor: pointer;
     -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
     animation: fadein 0.5s, fadeout 0.5s 2.5s;
-  }
-  
-  /* Animations to fade the snackbar in and out */
-  @-webkit-keyframes fadein {
+}
+
+@-webkit-keyframes fadein {
     from {top: 0; opacity: 0;}
     to {top: 30px; opacity: 1;}
-  }
-  
-  @keyframes fadein {
+}
+
+@keyframes fadein {
     from {top: 0; opacity: 0;}
     to {top: 30px; opacity: 1;}
-  }
-  
-  @-webkit-keyframes fadeout {
+}
+
+@-webkit-keyframes fadeout {
     from {top: 30px; opacity: 1;}
     to {top: 0; opacity: 0;}
-  }
-  
-  @keyframes fadeout {
+}
+
+@keyframes fadeout {
     from {top: 30px; opacity: 1;}
     to {top: 0; opacity: 0;}
-  }
+}
+
+::-webkit-scrollbar {
+    width: 20px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background-color: rgba(0, 0, 0, 0.25);
+}
+::-webkit-scrollbar-thumb {
+    -webkit-border-radius: 20px;
+    border-radius: 20px;
+    background-color: rgb(125, 153, 196);
+    border: 1px solid black;
+}
+::-webkit-scrollbar-thumb:hover {
+    -webkit-border-radius: 20px;
+    border-radius: 20px;
+    background-color: rgb(79, 108, 151);
+}

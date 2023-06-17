@@ -1,11 +1,12 @@
 package src
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
+
+	"01.kood.tech/git/aaaspoll/real-time-forum/sqldb"
 )
 
 type CreatePostInfo struct {
@@ -38,13 +39,7 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	statement, err := db.Prepare("INSERT INTO posts (header, content, userId, creationDate) VALUES (?, ?, ?, ?)")
+	statement, err := sqldb.DB.Prepare("INSERT INTO posts (header, content, userId, creationDate) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return
@@ -58,12 +53,7 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
 	userId := r.URL.Query().Get("userId")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 
 	query := `
 		SELECT p.postId, p.header AS postHeader, p.content AS postContent, 
@@ -73,7 +63,7 @@ func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 		INNER JOIN users AS u ON p.userId = u.userId
 	`
 
-	jsonData, err := json.Marshal(getPostsByQuery(db, query, userId))
+	jsonData, err := json.Marshal(getPostsByQuery(query, userId))
 	if err != nil {
 		log.Println(err)
 		return
@@ -86,17 +76,12 @@ func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 
 // creates the categories if they exist
 func createCategories(categories string) {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	if categories != "" {
 		catSlc := removeDuplicateStr(strings.Split(strings.ReplaceAll(strings.ToUpper(categories), " ", ""), "#"))
 		var postId int
-		db.QueryRow("SELECT postId FROM posts ORDER BY postId DESC LIMIT 1").Scan(&postId)
+		sqldb.DB.QueryRow("SELECT postId FROM posts ORDER BY postId DESC LIMIT 1").Scan(&postId)
 		for _, v := range catSlc {
-			statement, err := db.Prepare("INSERT INTO categories (categoryName, postId) VALUES (?, ?)")
+			statement, err := sqldb.DB.Prepare("INSERT INTO categories (categoryName, postId) VALUES (?, ?)")
 			if err != nil {
 				log.Println(err)
 				return
@@ -108,11 +93,7 @@ func createCategories(categories string) {
 
 // gets the categories for each post
 func getCategories(postId int) []string {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-	}
-	rows, _ := db.Query("SELECT categoryName FROM categories WHERE postId=?", postId)
+	rows, _ := sqldb.DB.Query("SELECT categoryName FROM categories WHERE postId=?", postId)
 	var resSlc []string
 	var category string
 	for rows.Next() {
@@ -122,8 +103,8 @@ func getCategories(postId int) []string {
 	return resSlc
 }
 
-func getPostsByQuery(db *sql.DB, query, userId string) []GetPostInfo {
-	rows, err := db.Query(query)
+func getPostsByQuery(query, userId string) []GetPostInfo {
+	rows, err := sqldb.DB.Query(query)
 	if err != nil {
 		log.Println(err)
 	}
@@ -140,7 +121,7 @@ func getPostsByQuery(db *sql.DB, query, userId string) []GetPostInfo {
 		if err != nil {
 			log.Println(err)
 		}
-		userReaction := userReactionType(db, post.PostId, userId, "post")
+		userReaction := userReactionType(post.PostId, userId, "post")
 		if userReaction != "" {
 			if userReaction == "like" {
 				post.LikedByCurrentUser = true

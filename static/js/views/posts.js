@@ -1,6 +1,7 @@
-import { sendEvent, waitForSocketConnection } from "./chat.js"
-import { hasSession, navigateTo, handleResponse } from "./helpers.js"
+import { sendEvent, waitForSocketConnection } from "./ws.js"
+import { hasSession, handleDefaultResponse } from "./helpers.js"
 import { addChatboxListener } from "./home.js"
+import { navigateTo } from "./router.js"
 
 export default async function() {
     const isAuthorized = await hasSession()
@@ -19,13 +20,14 @@ export default async function() {
         })
 
         addToolbarAndPostHtml(userData, allInfo)
+
         if(allInfo.commentsInfo) {
             allInfo.commentsInfo.forEach(comment => {
                 addCommentHtml(comment, "comments")
             })
         }
 
-        createCommentListener(userData, postId)
+        addCommentFormFunctionality(userData, postId)
 
         handlePostReactions(parseInt(postId), userData)
         handleCommentReactions(userData)
@@ -90,13 +92,13 @@ export const postReaction = async (postId, userData, reactionType, postType) => 
     }
     try {
         const response = await fetch("/post-reaction", options)
-        handleResponse(response)
+        handleDefaultResponse(response)
     } catch (error) {
         console.error(error)
     }
 }
 
-const createCommentListener = (userData, postId) => {
+const addCommentFormFunctionality = (userData, postId) => {
     const createCommentData = {}
     document.getElementById("createComment").addEventListener("submit", async (event) => {
         event.preventDefault()
@@ -112,31 +114,49 @@ const createCommentListener = (userData, postId) => {
         }
         try {
             const response = await fetch("/create-comment", options)
-            handleResponse(response)
+            handleDefaultResponse(response)
         } catch (error) {
             console.error(error)
         }
     })
 }
 
+export const addCommentHtml = (comment, contentDivId) => {
+    document.querySelector(`#${contentDivId}`).innerHTML += `
+    <div class="postbox">
+        <div class="postinfobox">
+            <a href="/user?id=${comment.creatorId}" data-link>${comment.creatorNickname}</a><br><br>
+            <a>${comment.creationDate}</a><br>
+        </div>
+        <div class="postcontent">
+            <a white-space: pre-wrap;>${comment.commentContent}</a>
+        </div>
+        <div class="reactionbox">
+            <button class="` + (comment.likedByCurrentUser ? "reactionbtnLiked" : "reactionbtn") + `" id="commentLike" value="${comment.commentId}">👍</button>
+            <a style="color: green; text-shadow: 1px 1px 0 #000; font-size: 30px;">${comment.likes}</a>
+            <button class="` + (comment.dislikedByCurrentUser ? "reactionbtnDisliked" : "reactionbtn") + `"class="reactionbtn" id="commentDislike" value="${comment.commentId}">👎</button>
+            <a style="color: red; text-shadow: 1px 1px 0 #000; font-size: 30px;">${comment.dislikes}</a>
+        </div>
+    </div>
+`
+}
+
 const addToolbarAndPostHtml = (userData, allInfo) => {
     document.querySelector("#app").innerHTML = `
         <div class="header">
-            <div class="nameAndChatBtncontainer">
-                <div>
-                    <a>Welcome to the Forum, </a>
-                    <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
-                </div>
-                <button id="chatBtn">Show chat</button>
-            </div><br><br>
-            <a href="/logout" data-link>Log out</a>
-            <div style="text-align: center;">
+            <div>
+                <a>Welcome to the Forum, </a>
+                <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
+            </div>
+            <div class="headerBtnsContainer">
+                <a class="button-33" href="/logout" data-link>Log out</a> 
                 <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
+                <button id="chatBtn" style="height: fit-content;" class="button-33"></button>
             </div>
         </div>
-        <div style="text-align: center;">
+        <div style="text-align: center; overflow-wrap: break-word;">
             <br><br>
-            <h1 style="font-size: 50px;">${allInfo.parentPostInfo.postHeader}</h1>
+            <h1 style="font-size: 50px; ">${allInfo.parentPostInfo.postHeader}</h1>
             <br><br><br>
             <div class="postbox">
                 <div class="postinfobox">
@@ -144,7 +164,7 @@ const addToolbarAndPostHtml = (userData, allInfo) => {
                     <a>${allInfo.parentPostInfo.creationDate}</a><br>
                 </div>
                 <div class="postcontent">
-                    <a>${allInfo.parentPostInfo.postContent}</a>
+                    <a white-space: pre-wrap;>${allInfo.parentPostInfo.postContent}</a>
                 </div>
                 <div class="reactionbox">
                     <button class="` + (allInfo.parentPostInfo.likedByCurrentUser ? "reactionbtnLiked" : "reactionbtn") + `" id="postLike">👍</button>
@@ -161,24 +181,4 @@ const addToolbarAndPostHtml = (userData, allInfo) => {
             </form>
         </div>
     `
-}
-
-export const addCommentHtml = (comment, contentDivId) => {
-    document.querySelector(`#${contentDivId}`).innerHTML += `
-    <div class="postbox">
-        <div class="postinfobox">
-            <a href="/user?id=${comment.creatorId}" data-link>${comment.creatorNickname}</a><br><br>
-            <a>${comment.creationDate}</a><br>
-        </div>
-        <div class="postcontent">
-            <a>${comment.commentContent}</a>
-        </div>
-        <div class="reactionbox">
-            <button class="` + (comment.likedByCurrentUser ? "reactionbtnLiked" : "reactionbtn") + `" id="commentLike" value="${comment.commentId}">👍</button>
-            <a style="color: green; text-shadow: 1px 1px 0 #000; font-size: 30px;">${comment.likes}</a>
-            <button class="` + (comment.dislikedByCurrentUser ? "reactionbtnDisliked" : "reactionbtn") + `"class="reactionbtn" id="commentDislike" value="${comment.commentId}">👎</button>
-            <a style="color: red; text-shadow: 1px 1px 0 #000; font-size: 30px;">${comment.dislikes}</a>
-        </div>
-    </div>
-`
 }

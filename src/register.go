@@ -1,10 +1,11 @@
 package src
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"01.kood.tech/git/aaaspoll/real-time-forum/sqldb"
 )
 
 type RegisterInfo struct {
@@ -18,30 +19,24 @@ type RegisterInfo struct {
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	// parse JSON payload into RegisterInfo struct
 	var registerInfo RegisterInfo
+
 	err := json.NewDecoder(r.Body).Decode(&registerInfo)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	// check if nickname or email already exists
 	var nicknameExists bool
 	var emailExists bool
-	err = db.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE lower(nickname) = lower(?))", registerInfo.Nickname).Scan(&nicknameExists)
+
+	err = sqldb.DB.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE lower(nickname) = lower(?))", registerInfo.Nickname).Scan(&nicknameExists)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	err = db.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE lower(email) = lower(?))", registerInfo.Email).Scan(&emailExists)
+	err = sqldb.DB.QueryRow("SELECT EXISTS (SELECT 1 FROM users WHERE lower(email) = lower(?))", registerInfo.Email).Scan(&emailExists)
 	if err != nil {
 		log.Println(err)
 		return
@@ -61,7 +56,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	statement, err := db.Prepare("INSERT INTO users (nickname, email, firstName, lastName, age, gender, password) VALUES (?, ?, ?, ?, ?, ?, ?)")
+	statement, err := sqldb.DB.Prepare("INSERT INTO users (nickname, email, firstName, lastName, age, gender, password) VALUES (?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Println(err)
 		return

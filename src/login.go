@@ -1,13 +1,13 @@
 package src
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
+	"01.kood.tech/git/aaaspoll/real-time-forum/sqldb"
 	"github.com/gofrs/uuid"
 )
 
@@ -30,15 +30,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	row := db.QueryRow("SELECT password FROM users WHERE nickname = ? OR email = ?", loginInfo.NicknameOrEmail, loginInfo.NicknameOrEmail)
 	var passwordQ string
-	row.Scan(&passwordQ)
+	sqldb.DB.QueryRow("SELECT password FROM users WHERE nickname = ? OR email = ?", loginInfo.NicknameOrEmail, loginInfo.NicknameOrEmail).Scan(&passwordQ)
 
 	if passwordQ != loginInfo.Password {
 		var errReason string
@@ -54,7 +47,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var nickname string
-	db.QueryRow("SELECT nickname FROM users WHERE nickname = ? OR email = ?", loginInfo.NicknameOrEmail, loginInfo.NicknameOrEmail).Scan(&nickname)
+	sqldb.DB.QueryRow("SELECT nickname FROM users WHERE nickname = ? OR email = ?", loginInfo.NicknameOrEmail, loginInfo.NicknameOrEmail).Scan(&nickname)
 
 	sessionId := createCookie(w, loginInfo.NicknameOrEmail)
 
@@ -76,11 +69,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func createCookie(w http.ResponseWriter, nicknameOrEmail string) string {
 	userId := getUserId(nicknameOrEmail)
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return ""
-	}
 
 	sessionValue := uuid.Must(uuid.NewV4()).String()
 	http.SetCookie(w, &http.Cookie{
@@ -88,8 +76,9 @@ func createCookie(w http.ResponseWriter, nicknameOrEmail string) string {
 		Value:  sessionValue,
 		MaxAge: int(24 * time.Hour),
 	})
-	db.Exec("DELETE FROM sessions WHERE userId=?", userId) // deletes previous session from the same user to avoid double sessions from one user
-	statement, err := db.Prepare("INSERT INTO sessions (sessionKey, userId) VALUES (?, ?)")
+
+	sqldb.DB.Exec("DELETE FROM sessions WHERE userId=?", userId) // deletes previous session from the same user to avoid double sessions from one user
+	statement, err := sqldb.DB.Prepare("INSERT INTO sessions (sessionKey, userId) VALUES (?, ?)")
 	if err != nil {
 		log.Println(err)
 	}
@@ -100,15 +89,9 @@ func createCookie(w http.ResponseWriter, nicknameOrEmail string) string {
 func CookieHandler(w http.ResponseWriter, r *http.Request) {
 	cookieId := r.URL.Query().Get("cookieId")
 
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
 	// check if a session exists for the given cookieId
 	var exists bool
-	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM sessions WHERE sessionKey = ?)", cookieId).Scan(&exists)
+	err := sqldb.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM sessions WHERE sessionKey = ?)", cookieId).Scan(&exists)
 	if err != nil {
 		log.Println(err)
 		return
@@ -126,22 +109,17 @@ func CookieHandler(w http.ResponseWriter, r *http.Request) {
 func LogOutHandler(w http.ResponseWriter, r *http.Request) {
 	userId := r.URL.Query().Get("userId")
 
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	http.SetCookie(w, &http.Cookie{
 		Name:   "sessionForUserId" + userId,
 		Value:  "0",
 		MaxAge: -1,
 	})
-	_, err = db.Exec("DELETE FROM sessions WHERE userId=?", userId) // deletes session when user logs out
+	_, err := sqldb.DB.Exec("DELETE FROM sessions WHERE userId=?", userId) // deletes session when user logs out
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	
+
 	userIdInt, _ := strconv.Atoi(userId)
 	updateUserStatus(false, userIdInt)
 

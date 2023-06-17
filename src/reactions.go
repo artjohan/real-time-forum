@@ -1,10 +1,11 @@
 package src
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"01.kood.tech/git/aaaspoll/real-time-forum/sqldb"
 )
 
 type ReactionInfo struct {
@@ -16,6 +17,7 @@ type ReactionInfo struct {
 
 func ReactionHandler(w http.ResponseWriter, r *http.Request) {
 	var reactionInfo ReactionInfo
+
 	err := json.NewDecoder(r.Body).Decode(&reactionInfo)
 	if err != nil {
 		log.Println(err)
@@ -27,35 +29,32 @@ func ReactionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func addReaction(postOrCommentId, userId int, reactionType, postType string) {
-	dataBase, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	var reaction string
-	if err := dataBase.QueryRow("SELECT reactionType FROM reactions WHERE "+postType+"Id=? AND userId=?", postOrCommentId, userId).Scan(&reaction); err != nil {
-		statement, _ := dataBase.Prepare("INSERT INTO reactions (reactionType, " + postType + "Id, userID) VALUES (?, ?, ?)")
+
+	if err := sqldb.DB.QueryRow("SELECT reactionType FROM reactions WHERE "+postType+"Id=? AND userId=?", postOrCommentId, userId).Scan(&reaction); err != nil {
+		statement, _ := sqldb.DB.Prepare("INSERT INTO reactions (reactionType, " + postType + "Id, userID) VALUES (?, ?, ?)")
 		statement.Exec(reactionType, postOrCommentId, userId)
 	} else {
 		if reaction == reactionType {
-			dataBase.Exec("DELETE FROM reactions WHERE "+postType+"Id=? AND userID=?", postOrCommentId, userId)
+			sqldb.DB.Exec("DELETE FROM reactions WHERE "+postType+"Id=? AND userID=?", postOrCommentId, userId)
 		} else {
-			dataBase.Exec("UPDATE reactions SET reactionType=? WHERE "+postType+"Id=? AND userID=?", reactionType, postOrCommentId, userId)
+			sqldb.DB.Exec("UPDATE reactions SET reactionType=? WHERE "+postType+"Id=? AND userID=?", reactionType, postOrCommentId, userId)
 		}
 	}
-	updateReactionCount(dataBase, postOrCommentId, postType, "like")
-	updateReactionCount(dataBase, postOrCommentId, postType, "dislike")
+
+	updateReactionCount(postOrCommentId, postType, "like")
+	updateReactionCount(postOrCommentId, postType, "dislike")
 }
 
-func updateReactionCount(db *sql.DB, postOrCommentId int, postType, reactionType string) {
+func updateReactionCount(postOrCommentId int, postType, reactionType string) {
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM reactions WHERE "+postType+"Id = ? AND reactionType = ?", postOrCommentId, reactionType).Scan(&count)
+	err := sqldb.DB.QueryRow("SELECT COUNT(*) FROM reactions WHERE "+postType+"Id = ? AND reactionType = ?", postOrCommentId, reactionType).Scan(&count)
 	if err != nil {
 		log.Println(err)
 	}
 
 	query := "UPDATE " + postType + "s SET " + reactionType + "s = ? WHERE " + postType + "Id = ?"
-	_, err = db.Exec(query, count, postOrCommentId)
+	_, err = sqldb.DB.Exec(query, count, postOrCommentId)
 	if err != nil {
 		log.Println(err)
 	}

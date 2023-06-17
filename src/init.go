@@ -1,22 +1,18 @@
 package src
 
 import (
-	"database/sql"
 	"io/ioutil"
-	"log"
-
+	
+	"01.kood.tech/git/aaaspoll/real-time-forum/sqldb"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func Init() {
-	dataBase, e := sql.Open("sqlite3", "./forum-database/database.db")
-	if e != nil {
-		log.Println(e)
-		return
-	}
+	sqldb.OpenDatabase()
+
 	if dbIsEmpty() {
 		sqlInit, _ := ioutil.ReadFile("./forum-database/init.sql")
-		dataBase.Exec(string(sqlInit))
+		sqldb.DB.Exec(string(sqlInit))
 	}
 }
 

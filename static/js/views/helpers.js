@@ -1,45 +1,5 @@
-import home from "./home.js"
-import register from "./register.js"
-import login, { hasCookie } from "./login.js"
-import error from "./error.js"
-import logout from "./logout.js"
-import posts from "./posts.js"
-import user from "./user.js"
-import chat from "./chat.js"
-
-
-
-export const navigateTo = url => {
-    history.pushState(null, null, url)
-    router()
-}
-
-
-export const router = async () => {
-    const routes = [
-        { path: "/", view: home },
-        { path: "/register", view: register },
-        { path: "/login", view: login },
-        { path: "/logout", view: logout },
-        { path: "/posts", view: posts },
-        { path: "/user", view: user },
-        { path: "/chat", view: chat },
-    ]
-
-    const potentialMatches = routes.map(route => {
-        return {
-            route: route,
-            isMatch: location.pathname === route.path
-        }
-    })
-
-    let match = potentialMatches.find(potentialMatch => potentialMatch.isMatch)
-    if(match) {
-        match.route.view()
-    } else {
-        error()
-    }
-}
+import { getNicknameById } from "./chat.js"
+import { navigateTo, router } from "./router.js"
 
 export const hasSession = async () => {
     if(localStorage.getItem("userData")) {
@@ -54,7 +14,22 @@ export const hasSession = async () => {
     return false
 }
 
-export const handleResponse = async (response) => {
+export const hasCookie = async (cookieId) => {
+    try {
+        const url = `/get-cookie?cookieId=${cookieId}`;
+        const response = await fetch(url);
+        if(response.ok) {
+            return true
+        } else {
+            return false
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        return false;
+    }
+}
+
+export const handleDefaultResponse = async (response) => {
     if(response.ok) {
         router()
     } else {
@@ -63,9 +38,16 @@ export const handleResponse = async (response) => {
     }
 }
 
-export class Event {
-    constructor(type, payload) {
-        this.type = type
-        this.payload = payload
-    }
+export const showNotificationSnackbar = async (msgData) => {
+    var snackBar = document.getElementById("snackbar")
+    var senderNickname = await getNicknameById(msgData.senderId)
+
+    snackBar.className = "show"
+    snackBar.innerHTML = `New message from ${senderNickname}! Click here to view!`
+
+    snackBar.addEventListener("click", () => {
+        navigateTo(`/chat?id=${msgData.senderId}`)
+    })
+
+    setTimeout(function(){ snackBar.className = snackBar.className.replace("show", "") }, 3000)
 }

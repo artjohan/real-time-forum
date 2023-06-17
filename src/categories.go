@@ -1,19 +1,15 @@
 package src
 
 import (
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"01.kood.tech/git/aaaspoll/real-time-forum/sqldb"
 )
 
 func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 	categoryName := r.URL.Query().Get("category")
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
 
 	query := `
 		SELECT p.postId, p.header AS postHeader, p.content AS postContent, 
@@ -25,7 +21,7 @@ func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 		WHERE c.categoryName = ?
 	`
 
-	rows, err := db.Query(query, categoryName)
+	rows, err := sqldb.DB.Query(query, categoryName)
 	if err != nil {
 		log.Println(err)
 		return
@@ -60,13 +56,7 @@ func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AllCategoriesHandler(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("sqlite3", "./forum-database/database.db")
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	rows, err := db.Query("SELECT categoryName FROM categories")
+	rows, err := sqldb.DB.Query("SELECT categoryName FROM categories")
 	if err != nil {
 		log.Println(err)
 	}

@@ -16,6 +16,7 @@ type SendMessageEvent struct {
 }
 
 type ReturnMessageEvent struct {
+	MessageId int `json:"messageId"`
 	SendMessageEvent
 	SentDate string `json:"sentDate"`
 }
@@ -33,16 +34,16 @@ type SendChatDataEvent struct {
 }
 
 type UserDataEvent struct {
-	UserId   int    `json:"userId"`
-	Nickname string `json:"nickname"`
-	Online   bool   `json:"online"`
-	LastMsgData  ReturnMessageEvent `json:"lastMsgData"`
+	UserId      int                `json:"userId"`
+	Nickname    string             `json:"nickname"`
+	Online      bool               `json:"online"`
+	LastMsgData ReturnMessageEvent `json:"lastMsgData"`
 }
 
 const (
-	EventSendMessage    = "send_message"
-	EventNewMessage     = "new_message"
-	EventGetMessages    = "get_messages"
-	EventGetChatbarData = "get_chatbar_data"
+	EventSendMessage       = "send_message"
+	EventNewMessage        = "new_message"
+	EventGetMessages       = "get_messages"
+	EventGetChatbarData    = "get_chatbar_data"
 	EventUpdateChatbarData = "update_chatbar_data"
 )
