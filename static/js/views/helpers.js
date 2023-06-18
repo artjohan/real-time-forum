@@ -1,4 +1,3 @@
-import { getNicknameById } from "./chat.js"
 import { navigateTo, router } from "./router.js"
 
 export const hasSession = async () => {
@@ -40,7 +39,7 @@ export const handleDefaultResponse = async (response) => {
 
 export const showNotificationSnackbar = async (msgData) => {
     var snackBar = document.getElementById("snackbar")
-    var senderNickname = await getNicknameById(msgData.senderId)
+    var senderNickname = await getDataFromServer(`get-nickname?id=${msgData.senderId}`)
 
     snackBar.className = "show"
     snackBar.innerHTML = `New message from ${senderNickname}! Click here to view!`
@@ -50,4 +49,18 @@ export const showNotificationSnackbar = async (msgData) => {
     })
 
     setTimeout(function(){ snackBar.className = snackBar.className.replace("show", "") }, 3000)
+}
+
+export const getDataFromServer = async (url) => {
+    try {
+        const response = await fetch(url)
+        if (response.ok) {
+            const data = await response.json()
+            return data
+        } else {
+            console.log(response.statusText)
+        }
+    } catch (error) {
+        console.error(error)
+    }
 }

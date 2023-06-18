@@ -1,5 +1,5 @@
 import { sendEvent, waitForSocketConnection } from "./ws.js"
-import { hasSession, handleDefaultResponse } from "./helpers.js"
+import { hasSession, handleDefaultResponse, getDataFromServer } from "./helpers.js"
 import { router, navigateTo, navigateToWithoutSavingHistory } from "./router.js"
 
 export default async function() {
@@ -13,8 +13,8 @@ export default async function() {
         const userData = JSON.parse(localStorage.getItem("userData"))
         const category = url.searchParams.get("category")
 
-        const allPosts = await getPosts(userData.userId)
-        const allCategories = await getCategories()
+        const allPosts = await getDataFromServer(`get-posts?userId=${userData.userId}`)
+        const allCategories = await getDataFromServer('/get-all-categories')
 
         waitForSocketConnection(window.socket, () =>{
             sendEvent("get_chatbar_data", userData.userId)
@@ -49,7 +49,7 @@ export default async function() {
 
         if(category) {
             categorySelect.value = category.toUpperCase()
-            const filteredPosts = await getFilteredPosts(category.toUpperCase())
+            const filteredPosts = await getDataFromServer(`/get-filtered-posts?category=${category.toUpperCase()}`)
 
             document.querySelector("#posts").innerHTML = ""
             filteredPosts.forEach(post => {
@@ -98,20 +98,6 @@ const addPostCreation = (userData) => {
     })
 }
 
-const getPosts = async (userId) => {
-    try {
-        const response = await fetch(`get-posts?userId=${userId}`)
-        if (response.ok) {
-            const data = await response.json()
-            return data
-        } else {
-            console.log(response.statusText)
-        }
-    } catch (error) {
-        console.error(error)
-    }
-}
-
 export const addChatboxListener = () => {
     const chatDiv = document.getElementById("messages")
     const appDiv = document.getElementById("app")
@@ -138,33 +124,6 @@ export const addChatboxListener = () => {
     })
 }
 
-const getCategories = async () => {
-    try {
-        const response = await fetch('/get-all-categories')
-        if (response.ok) {
-            const data = await response.json()
-            return data
-        } else {
-            console.log(response.statusText)
-        }
-    } catch (error) {
-        console.error(error)
-    }
-}
-
-const getFilteredPosts = async (category) => {
-    try {
-        const response = await fetch(`/get-filtered-posts?category=${category}`)
-        if (response.ok) {
-            const data = await response.json()
-            return data
-        } else {
-            console.log(response.statusText)
-        }
-    } catch (error) {
-        console.error(error)
-    }
-}
 
 export const addPostHtml = (post, contentDivId) => {
     document.querySelector(`#${contentDivId}`).innerHTML += `

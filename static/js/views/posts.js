@@ -1,5 +1,5 @@
 import { sendEvent, waitForSocketConnection } from "./ws.js"
-import { hasSession, handleDefaultResponse } from "./helpers.js"
+import { hasSession, handleDefaultResponse, getDataFromServer } from "./helpers.js"
 import { addChatboxListener } from "./home.js"
 import { navigateTo } from "./router.js"
 
@@ -13,7 +13,7 @@ export default async function() {
         const postId = url.searchParams.get("id")
 
         const userData = JSON.parse(localStorage.getItem("userData"))
-        const allInfo = await getPostAndComments(userData.userId, postId)
+        const allInfo = await getDataFromServer(`/get-post-details?postId=${postId}&userId=${userData.userId}`)
 
         waitForSocketConnection(window.socket, () =>{
             sendEvent("get_chatbar_data", userData.userId)
@@ -33,20 +33,6 @@ export default async function() {
         handleCommentReactions(userData)
 
         addChatboxListener()
-    }
-}
-
-const getPostAndComments = async (userId, postId) => {
-    try {
-        const response = await fetch(`/get-post-details?postId=${postId}&userId=${userId}`)
-        if (response.ok) {
-            const data = await response.json()
-            return data
-        } else {
-            console.log(response.statusText)
-        }
-    } catch (error) {
-        console.error(error)
     }
 }
 

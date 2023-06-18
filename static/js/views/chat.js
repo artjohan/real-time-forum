@@ -1,4 +1,4 @@
-import { hasSession, showNotificationSnackbar } from "./helpers.js"
+import { getDataFromServer, hasSession, showNotificationSnackbar } from "./helpers.js"
 import { addChatboxListener } from "./home.js"
 import { navigateTo } from "./router.js"
 import { sendEvent, waitForSocketConnection } from "./ws.js"
@@ -17,7 +17,7 @@ export default async function() {
         receiverId = url.searchParams.get("id")
 
         const userData = JSON.parse(localStorage.getItem("userData"))
-        const otherChatterNickname = await getNicknameById(receiverId)
+        const otherChatterNickname = await getDataFromServer(`get-nickname?id=${receiverId}`)
 
         if(receiverId == userData.userId) {
             navigateTo("/")
@@ -74,20 +74,6 @@ const loadAdditionalMessages = (userId) => {
         scrollHeightBeforeLoad = document.getElementById("chatBox").scrollHeight
         getMessages(userId, parseInt(receiverId), amount)
         scrolling = true
-    }
-}
-
-export const getNicknameById = async (userId) => {
-    try {
-        const response = await fetch(`get-nickname?id=${userId}`)
-        if (response.ok) {
-            const data = await response.json()
-            return data
-        } else {
-            console.log(response.statusText)
-        }
-    } catch (error) {
-        console.error(error)
     }
 }
 

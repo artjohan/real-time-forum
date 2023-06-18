@@ -103,7 +103,7 @@ func getCategories(postId int) []string {
 	return resSlc
 }
 
-func getPostsByQuery(query, userId string) []GetPostInfo {
+func getPostsByQuery(query, currentUserId string) []GetPostInfo {
 	rows, err := sqldb.DB.Query(query)
 	if err != nil {
 		log.Println(err)
@@ -121,7 +121,7 @@ func getPostsByQuery(query, userId string) []GetPostInfo {
 		if err != nil {
 			log.Println(err)
 		}
-		userReaction := userReactionType(post.PostId, userId, "post")
+		userReaction := userReactionType(post.PostId, currentUserId, "post")
 		if userReaction != "" {
 			if userReaction == "like" {
 				post.LikedByCurrentUser = true

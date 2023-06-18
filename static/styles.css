@@ -290,6 +290,13 @@ body {
     text-align: left;
 }
 
+.errorMessage {
+    margin-top: 1px;
+    color: red;
+    height: 5px;
+    font-size: 14px;
+}
+
 .messageContainer {
     display: flex;
     align-items: center;

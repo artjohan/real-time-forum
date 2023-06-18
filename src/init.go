@@ -9,10 +9,12 @@ import (
 
 func Init() {
 	sqldb.OpenDatabase()
-
+	
 	if dbIsEmpty() {
 		sqlInit, _ := ioutil.ReadFile("./forum-database/init.sql")
 		sqldb.DB.Exec(string(sqlInit))
+	} else {
+		resetUserStatuses()
 	}
 }
 

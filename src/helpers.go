@@ -151,3 +151,21 @@ func updateUserStatus(newStatus bool, userId int) {
 		return
 	}
 }
+
+func resetUserStatuses() {
+	var userIds []int
+	rows, err := sqldb.DB.Query("SELECT userId FROM users WHERE online = true")
+	if err != nil {
+		log.Println(err)
+	}
+
+	for rows.Next() {
+		var userId int
+		rows.Scan(&userId)
+		userIds = append(userIds, userId)
+	}
+
+	for _, v := range userIds {
+		updateUserStatus(false, v)
+	}
+}

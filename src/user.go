@@ -61,7 +61,7 @@ func GetCreatedCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	currentUserId := r.URL.Query().Get("currentUserId")
 
 	var createdCommentsInfo []GetPostAndCommentsInfo
-	parentPosts := getCreatedCommentsParentPosts(viewedUserId)
+	parentPosts := getCreatedCommentsParentPosts(viewedUserId, currentUserId)
 
 	for _, v := range parentPosts {
 		var singlePostAndComments GetPostAndCommentsInfo
@@ -110,7 +110,7 @@ func GetLikedCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	currentUserId := r.URL.Query().Get("currentUserId")
 
 	var likedCommentsInfo []GetPostAndCommentsInfo
-	likedParentPosts := getReactedCommentsParentPosts(viewedUserId, "like")
+	likedParentPosts := getReactedCommentsParentPosts(viewedUserId, currentUserId, "like")
 
 	for _, v := range likedParentPosts {
 		var singlePostAndComments GetPostAndCommentsInfo
@@ -159,7 +159,7 @@ func GetDislikedCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	currentUserId := r.URL.Query().Get("currentUserId")
 
 	var dislikedCommentsInfo []GetPostAndCommentsInfo
-	dislikedParentPosts := getReactedCommentsParentPosts(viewedUserId, "dislike")
+	dislikedParentPosts := getReactedCommentsParentPosts(viewedUserId, currentUserId, "dislike")
 
 	for _, v := range dislikedParentPosts {
 		var singlePostAndComments GetPostAndCommentsInfo
@@ -190,7 +190,7 @@ func getUserInfo(userId string) UserPageInfo {
 	return userPageInfo
 }
 
-func getCreatedCommentsParentPosts(userId string) []GetPostInfo {
+func getCreatedCommentsParentPosts(viewedUserId, currentUserId string) []GetPostInfo {
 	query := `
 		SELECT DISTINCT p.postId, p.header AS postHeader, p.content AS postContent, 
 			p.userId AS creatorId, u.nickname AS creatorNickname,
@@ -198,13 +198,12 @@ func getCreatedCommentsParentPosts(userId string) []GetPostInfo {
 		FROM posts AS p
 		INNER JOIN users AS u ON p.userId = u.userId
 		INNER JOIN comments AS c ON p.postId = c.postId
-		INNER JOIN reactions AS r ON c.commentId = r.commentId
-		WHERE r.userId = ` + userId
+		WHERE c.userId = ` + viewedUserId
 
-	return getPostsByQuery(query, userId)
+	return getPostsByQuery(query, currentUserId)
 }
 
-func getReactedCommentsParentPosts(userId string, reactionType string) []GetPostInfo {
+func getReactedCommentsParentPosts(viewedUserId, currentUserId, reactionType string) []GetPostInfo {
 	query := `
 		SELECT DISTINCT p.postId, p.header AS postHeader, p.content AS postContent, 
 			p.userId AS creatorId, u.nickname AS creatorNickname,
@@ -213,9 +212,9 @@ func getReactedCommentsParentPosts(userId string, reactionType string) []GetPost
 		INNER JOIN users AS u ON p.userId = u.userId
 		INNER JOIN comments AS c ON p.postId = c.postId
 		INNER JOIN reactions AS r ON c.commentId = r.commentId
-		WHERE c.userId = ` + userId + ` AND r.reactionType = "` + reactionType + `"`
+		WHERE r.userId = ` + viewedUserId + ` AND r.reactionType = "` + reactionType + `"`
 
-	return getPostsByQuery(query, userId)
+	return getPostsByQuery(query, currentUserId)
 }
 
 func getUserCreatedCommentsUnderPost(viewedUserId, currentUserId, postId string) []CommentInfo {

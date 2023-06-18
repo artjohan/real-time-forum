@@ -30,7 +30,7 @@ const handleLogoutResponse = (response) => {
         document.getElementById("messages").style.visibility = "hidden"
         document.getElementById("app").style.width = "100%"
 
-        sendEvent("update_chatbar_data", "yes")
+        sendEvent("update_chatbar_data", "updating chatbar, reason logout")
         navigateTo("/")
     } else {
         console.log(response.statusText)

@@ -84,7 +84,7 @@ func GetPostDetailsHandler(w http.ResponseWriter, r *http.Request) {
 func getCommentsByQuery(query, userId string) []CommentInfo {
 	rows, err := sqldb.DB.Query(query)
 	if err != nil {
-		log.Println(err)
+		log.Println(err, "here3")
 	}
 
 	var comments []CommentInfo
@@ -96,7 +96,7 @@ func getCommentsByQuery(query, userId string) []CommentInfo {
 			&comment.CreationDate,
 		)
 		if err != nil {
-			log.Println(err)
+			log.Println(err, "here4")
 		}
 
 		userReaction := userReactionType(comment.CommentId, userId, "comment")

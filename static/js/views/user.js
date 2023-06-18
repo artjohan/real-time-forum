@@ -1,5 +1,5 @@
 import { sendEvent, waitForSocketConnection } from "./ws.js"
-import { hasSession } from "./helpers.js"
+import { getDataFromServer, hasSession } from "./helpers.js"
 import { addChatboxListener, addPostHtml } from "./home.js"
 import { addCommentHtml, handleCommentReactions, postReaction } from "./posts.js"
 import { navigateTo, navigateToWithoutSavingHistory } from "./router.js"
@@ -19,136 +19,130 @@ export default async function() {
         const userData = JSON.parse(localStorage.getItem("userData"))
         const viewedUserData = await getDataFromServer(`/get-user-info?userId=${viewedUserId}`)
 
+        console.log(viewType)
+        const viewData = viewType ? await getDataFromServer(`/get-${viewType}?viewedUserId=${viewedUserId}&currentUserId=${userData.userId}`) : null
+
+        console.log(viewData)
+
+        waitForSocketConnection(window.socket, () =>{
+            sendEvent("get_chatbar_data", userData.userId)
+        })
+
         addUserPageHtml(userData, viewedUserData, viewedUserId)
-        
+
         document.querySelectorAll(".option").forEach(option => {
             option.addEventListener("click", (e) => {
                 navigateToWithoutSavingHistory(`/user?id=${viewedUserId}&view=${e.target.id}`)
             })
         })
 
-        waitForSocketConnection(window.socket, () =>{
-            sendEvent("get_chatbar_data", userData.userId)
-        })
-
         addChatboxListener()
 
         if(viewType) {
-            addViewTypeHtml(viewType, userData, viewedUserId)
+            addViewTypeHtml(viewType, userData, viewData)
         }
     }
 }
 
-const addViewTypeHtml = (viewType, userData, viewedUserId) => {
+const addViewTypeHtml = (viewType, userData, viewData) => {
     document.getElementById(viewType).classList.add("selected")
-
+    const contentDiv = document.getElementById("selectContent")
     const viewTypeFunctions = {
-        createdPosts: addCreatedPostsHtml,
-        createdComments: addCreatedCommentsHtml,
-        likedPosts: addLikedPostsHtml,
-        likedComments: addLikedCommentsHtml,
-        dislikedPosts: addDislikedPostsHtml,
-        dislikedComments: addDislikedCommentsHtml,
+        "created-posts": addCreatedPostsHtml,
+        "created-comments": addCreatedCommentsHtml,
+        "liked-posts": addLikedPostsHtml,
+        "liked-comments": addLikedCommentsHtml,
+        "disliked-posts": addDislikedPostsHtml,
+        "disliked-comments": addDislikedCommentsHtml,
     }
 
-    viewTypeFunctions[viewType](document.getElementById("selectContent"), viewedUserId, userData.userId)
-    
-    handleCommentReactions(userData)
-    handlePostReactions(userData)
+    viewTypeFunctions[viewType](contentDiv, viewData, userData)
 }
 
-const addCreatedPostsHtml = async (contentDiv, viewedUserId, currentUserId) => {
-    const createdPosts = await getDataFromServer(`/get-created-posts?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
+const addCreatedPostsHtml = (contentDiv, viewData, userData) => {
     contentDiv.innerHTML = ""
-    if(createdPosts) {
-        createdPosts.forEach(post => {
+    if(viewData) {
+        viewData.forEach(post => {
             addPostHtml(post, "selectContent")
         })
+        handleCommentReactions(userData)
+        handlePostReactions(userData)
     } else {
         contentDiv.innerHTML = "<h1>Nothing to show here</h1>"
     }
 }
 
-const addCreatedCommentsHtml = async (contentDiv, viewedUserId, currentUserId) => {
-    const createdComments = await getDataFromServer(`/get-created-comments?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
+const addCreatedCommentsHtml = (contentDiv, viewData, userData) => {
     contentDiv.innerHTML = ""
-    if(createdComments) {
-        createdComments.forEach(comment => {
+    if(viewData) {
+        viewData.forEach(comment => {
             addParentPostHtml(comment.parentPostInfo, "selectContent", "User commented:")
             comment.commentsInfo.forEach(commentInfo => {
                 addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
             })
         })
+        handleCommentReactions(userData)
+        handlePostReactions(userData)
     } else {
         contentDiv.innerHTML = "<h1>Nothing to show here</h1>"
     }
 }
 
-const addLikedPostsHtml = async (contentDiv, viewedUserId, currentUserId) => {
-    const likedPosts = await getDataFromServer(`/get-liked-posts?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
+const addLikedPostsHtml = (contentDiv, viewData, userData) => {
     contentDiv.innerHTML = ""
-    if(likedPosts) {
-        likedPosts.forEach(post => {
+    if(viewData) {
+        viewData.forEach(post => {
             addPostHtml(post, "selectContent")
         })
+        handleCommentReactions(userData)
+        handlePostReactions(userData)
     } else {
         contentDiv.innerHTML = "<h1>Nothing to show here</h1>"
     }
 }
 
-const addLikedCommentsHtml = async (contentDiv, viewedUserId, currentUserId) => {
-    const likedComments = await getDataFromServer(`/get-liked-comments?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
+const addLikedCommentsHtml = (contentDiv, viewData, userData) => {
     contentDiv.innerHTML = ""
-    if(likedComments) {
-        likedComments.forEach(comment => {
+    if(viewData) {
+        viewData.forEach(comment => {
             addParentPostHtml(comment.parentPostInfo, "selectContent", "User liked:")
             comment.commentsInfo.forEach(commentInfo => {
                 addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
             })
         })
+        handleCommentReactions(userData)
+        handlePostReactions(userData)
     } else {
         contentDiv.innerHTML = "<h1>Nothing to show here</h1>"
     }
 }
 
-const addDislikedPostsHtml = async (contentDiv, viewedUserId, currentUserId) => {
-    const dislikedPosts = await getDataFromServer(`/get-disliked-posts?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
+const addDislikedPostsHtml = (contentDiv, viewData, userData) => {
     contentDiv.innerHTML = ""
-    if(dislikedPosts) {
-        dislikedPosts.forEach(post => {
+    if(viewData) {
+        viewData.forEach(post => {
             addPostHtml(post, "selectContent")
         })
+        handleCommentReactions(userData)
+        handlePostReactions(userData)
     } else {
         contentDiv.innerHTML = "<h1>Nothing to show here</h1>"
     }
 }
 
-const addDislikedCommentsHtml = async (contentDiv, viewedUserId, currentUserId) => {
-    const dislikedComments = await getDataFromServer(`/get-disliked-comments?viewedUserId=${viewedUserId}&currentUserId=${currentUserId}`)
+const addDislikedCommentsHtml = (contentDiv, viewData, userData) => {
     contentDiv.innerHTML = ""
-    if(dislikedComments) {
-        dislikedComments.forEach(comment => {
+    if(viewData) {
+        viewData.forEach(comment => {
             addParentPostHtml(comment.parentPostInfo, "selectContent", "User disliked:")
             comment.commentsInfo.forEach(commentInfo => {
                 addCommentHtml(commentInfo, `comments${comment.parentPostInfo.postId}`)
             })
         })
+        handleCommentReactions(userData)
+        handlePostReactions(userData)
     } else {
         contentDiv.innerHTML = "<h1>Nothing to show here</h1>"
-    }
-}
-
-const getDataFromServer = async (url) => {
-    try {
-        const response = await fetch(url)
-        if (response.ok) {
-            const data = await response.json()
-            return data
-        } else {
-            console.log(response.statusText)
-        }
-    } catch (error) {
-        console.error(error)
     }
 }
 
@@ -219,12 +213,12 @@ const addUserPageHtml = (userData, viewedUserData, viewedUserId) => {
         </div>
         <div id="msgUser" style="text-align: center;"></div>
         <ul class="toolbar">
-            <li class="option" id="createdPosts">Created Posts</li>
-            <li class="option" id="createdComments">Created Comments</li>
-            <li class="option" id="likedPosts">Liked Posts</li>
-            <li class="option" id="likedComments">Liked Comments</li>
-            <li class="option" id="dislikedPosts">Disliked Posts</li>
-            <li class="option" id="dislikedComments">Disliked Comments</li>
+            <li class="option" id="created-posts">Created Posts</li>
+            <li class="option" id="created-comments">Created Comments</li>
+            <li class="option" id="liked-posts">Liked Posts</li>
+            <li class="option" id="liked-comments">Liked Comments</li>
+            <li class="option" id="disliked-posts">Disliked Posts</li>
+            <li class="option" id="disliked-comments">Disliked Comments</li>
         </ul>
         <div id="selectContent"></div>
     `
