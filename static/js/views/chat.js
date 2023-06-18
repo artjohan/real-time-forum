@@ -3,7 +3,7 @@ import { addChatboxListener } from "./home.js"
 import { navigateTo } from "./router.js"
 import { sendEvent, waitForSocketConnection } from "./ws.js"
 
-var amount, scrolling, scrollEnd, scrollHeightBeforeLoad, receiverId
+var amount, scrolling, scrollEnd, scrollHeightBeforeLoad, receiverId, otherChatterNickname, userNickname
 
 export default async function() {
     const isAuthorized = await hasSession()
@@ -17,7 +17,8 @@ export default async function() {
         receiverId = url.searchParams.get("id")
 
         const userData = JSON.parse(localStorage.getItem("userData"))
-        const otherChatterNickname = await getDataFromServer(`get-nickname?id=${receiverId}`)
+        otherChatterNickname = await getDataFromServer(`get-nickname?id=${receiverId}`)
+        userNickname = userData.nickname
 
         if(receiverId == userData.userId) {
             navigateTo("/")
@@ -137,6 +138,16 @@ const updateMessages = (messages) => {
                 <br>
             `
         }
+
+        if(!prevMsgType || prevMsgType != msgType || timePassed(prevMsg, message) > 900000) {
+            chatBox.innerHTML += `
+                <div id="nicknameBox">
+                    <a>${msgType === "Received" ? otherChatterNickname : userNickname}</a>
+                </div>
+            `
+        }
+
+
 
         chatBox.innerHTML += `
             <div class="messageContainer ${msgType === 'Received' ? 'received' : 'sent'}">
