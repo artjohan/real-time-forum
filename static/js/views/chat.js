@@ -42,29 +42,46 @@ export default async function() {
 }
 
 const addMessageSending = (userData) => {
+    const msgContent = document.getElementById("msgContent")
+    const submitBtn = document.getElementById("submitBtn")
+
+    submitBtn.disabled = true
+    msgContent.addEventListener("input", () => {
+        if(msgContent.value.trim()) {
+            submitBtn.disabled = false
+        } else {
+            submitBtn.disabled = true
+        }
+    })
+
     const msgBody = {}
     const sendMsgForm = document.getElementById("sendMsg")
 
     sendMsgForm.addEventListener("submit", async (event) => {
         event.preventDefault()
-        submitMsgForm()
+        if(msgContent.value.trim()) {
+            submitMsgForm()
+        }
     })
 
     const textArea = document.getElementById("msgContent")
     textArea.addEventListener('keydown', function(event) {
         if (event.key === 'Enter' && !event.shiftKey) {
-          event.preventDefault()
-          submitMsgForm()
+            event.preventDefault()
+            if(msgContent.value.trim()) {
+                submitMsgForm()
+            }
         }
     })
 
     const submitMsgForm = () => {
         msgBody["senderId"] = userData.userId
         msgBody["receiverId"] = parseInt(receiverId)
-        msgBody["message"] = document.getElementById("msgContent").value
+        msgBody["message"] = msgContent.value
 
         sendEvent("send_message", msgBody)
         sendMsgForm.reset()
+        submitBtn.disabled = true
     }
 }
 
@@ -266,7 +283,7 @@ const addChatpageHtml = (nickname, userData) => {
                 <form id="sendMsg">
                     <div class="messageContainer">
                         <textarea id="msgContent" class="createPostHeaderAndTags" style="height: 60px; width: 95%; resize: none;" placeholder="Message" type="text" required></textarea><br><br>
-                        <button class="button-33" style="margin-left: 10px;" type="submit">Send</button>
+                        <button id="submitBtn"class="button-33" style="margin-left: 10px;" type="submit">Send</button>
                     </div>
                 </form>
             </div>

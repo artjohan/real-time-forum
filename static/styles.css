@@ -65,14 +65,14 @@ body {
     padding: 15px;
     border-radius: 5px;
     background-color: rgb(0, 204, 255);
-    width: 10%;
+    flex: 1;
     font-size: 20px;
     border: 2px solid #1f276d54;
 }
 
 .reactionbox {
     text-align: center;
-    width: 20%;
+    flex: 2;
     font-size: 15px;
     margin-top: 30px;
 }
@@ -111,7 +111,8 @@ body {
 }
 
 .postcontent {
-    width: 70%;
+    flex: 7;
+    max-width: 60%;
     height: fit-content;
     font-size: 20px;
     text-align: left;
@@ -119,6 +120,7 @@ body {
     margin-right: 20px;
     display: block;
     overflow-wrap: break-word;
+    box-sizing: border-box;
 }
 
 .header {
@@ -159,7 +161,7 @@ body {
     touch-action: manipulation;
 }
 
-.button-33:hover {
+.button-33:not(:disabled):hover {
     box-shadow: rgba(44,187,99,.35) 0 -25px 18px -14px inset,rgba(44,187,99,.25) 0 1px 2px,rgba(44,187,99,.25) 0 2px 4px,rgba(44,187,99,.25) 0 4px 8px,rgba(44,187,99,.25) 0 8px 16px,rgba(44,187,99,.25) 0 16px 32px;
     transform: scale(1.05);
 }
@@ -369,4 +371,14 @@ body {
     -webkit-border-radius: 20px;
     border-radius: 20px;
     background-color: rgb(79, 108, 151);
+}
+
+.button-33:disabled {
+    background-color: rgb(192, 192, 192);
+    box-shadow: none;
+    color: grey;
+}
+
+.button-33:disabled:hover {
+    cursor: default;
 }

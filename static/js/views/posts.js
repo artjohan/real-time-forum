@@ -85,24 +85,38 @@ export const postReaction = async (postId, userData, reactionType, postType) => 
 }
 
 const addCommentFormFunctionality = (userData, postId) => {
+    const commentContent = document.getElementById("commentContent")
+    const submitBtn = document.getElementById("submitBtn")
+
+    submitBtn.disabled = true
+    commentContent.addEventListener("input", () => {
+        if(commentContent.value.trim()) {
+            submitBtn.disabled = false
+        } else {
+            submitBtn.disabled = true
+        }
+    })
+
     const createCommentData = {}
     document.getElementById("createComment").addEventListener("submit", async (event) => {
         event.preventDefault()
-        createCommentData["creatorId"] = userData.userId
-        createCommentData["postId"] = parseInt(postId)
-        createCommentData["commentContent"] = document.getElementById("commentContent").value
-        const options = {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(createCommentData)
-        }
-        try {
-            const response = await fetch("/create-comment", options)
-            handleDefaultResponse(response)
-        } catch (error) {
-            console.error(error)
+        if(commentContent.value.trim()) {
+            createCommentData["creatorId"] = userData.userId
+            createCommentData["postId"] = parseInt(postId)
+            createCommentData["commentContent"] = document.getElementById("commentContent").value
+            const options = {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(createCommentData)
+            }
+            try {
+                const response = await fetch("/create-comment", options)
+                handleDefaultResponse(response)
+            } catch (error) {
+                console.error(error)
+            }
         }
     })
 }
@@ -115,7 +129,7 @@ export const addCommentHtml = (comment, contentDivId) => {
             <a>${comment.creationDate}</a><br>
         </div>
         <div class="postcontent">
-            <a white-space: pre-wrap;>${comment.commentContent}</a>
+            <a style="white-space: pre-wrap;">${comment.commentContent}</a>
         </div>
         <div class="reactionbox">
             <button class="` + (comment.likedByCurrentUser ? "reactionbtnLiked" : "reactionbtn") + `" id="commentLike" value="${comment.commentId}">👍</button>
@@ -150,7 +164,7 @@ const addToolbarAndPostHtml = (userData, allInfo) => {
                     <a>${allInfo.parentPostInfo.creationDate}</a><br>
                 </div>
                 <div class="postcontent">
-                    <a white-space: pre-wrap;>${allInfo.parentPostInfo.postContent}</a>
+                    <a style="white-space: pre-wrap;">${allInfo.parentPostInfo.postContent}</a>
                 </div>
                 <div class="reactionbox">
                     <button class="` + (allInfo.parentPostInfo.likedByCurrentUser ? "reactionbtnLiked" : "reactionbtn") + `" id="postLike">👍</button>
@@ -162,8 +176,8 @@ const addToolbarAndPostHtml = (userData, allInfo) => {
             <h1 style="font-size: 50px;">Comments:</h1>
             <div id="comments"></div>
             <form id="createComment">
-                <textarea style="width: 100%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; height: 100px; font-size: 20px;" id="commentContent" placeholder="Add comment" type="text" required></textarea><br><br>
-                <button class="button-33" type="submit">Submit comment</button>
+                <textarea style="width: 100%; background-color: #c2e6fb; border: #7a7fc0 solid 2px; border-radius: 5px; height: 100px; font-size: 20px;" id="commentContent" placeholder="Add comment" type="text"></textarea><br><br>
+                <button id="submitBtn" class="button-33" type="submit">Submit comment</button>
             </form>
         </div>
     `
