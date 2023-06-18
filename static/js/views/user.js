@@ -22,8 +22,6 @@ export default async function() {
         console.log(viewType)
         const viewData = viewType ? await getDataFromServer(`/get-${viewType}?viewedUserId=${viewedUserId}&currentUserId=${userData.userId}`) : null
 
-        console.log(viewData)
-
         waitForSocketConnection(window.socket, () =>{
             sendEvent("get_chatbar_data", userData.userId)
         })

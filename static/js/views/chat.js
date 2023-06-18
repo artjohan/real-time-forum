@@ -128,7 +128,7 @@ const updateMessages = (messages) => {
 
         if(!prevMsg || timePassed(prevMsg, message) > 900000) {
             chatBox.innerHTML += `
-                <div>
+                <br><br><br><div>
                     <a>${message.sentDate}</a>
                 </div><br><br><br>
             `

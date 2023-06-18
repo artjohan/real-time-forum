@@ -1,6 +1,6 @@
 import { sendEvent, waitForSocketConnection } from "./ws.js"
 import { hasSession, handleDefaultResponse, getDataFromServer } from "./helpers.js"
-import { router, navigateTo, navigateToWithoutSavingHistory } from "./router.js"
+import { navigateTo, navigateToWithoutSavingHistory } from "./router.js"
 
 export default async function() {
     const isAuthorized = await hasSession()
@@ -69,31 +69,56 @@ const addCategory = (category) => {
 }
 
 const addPostCreation = (userData) => {
+    const postContent = document.getElementById("postContent")
+    const postHeader = document.getElementById("postHeader")
+    const submitBtn = document.getElementById("submitBtn")
+
+    submitBtn.disabled = true
+    postHeader.addEventListener("input", () => {
+        changeBtnStatus()
+    })
+
+    postContent.addEventListener("input", () => {
+        changeBtnStatus()
+    })
+
+    const changeBtnStatus = () => {
+        if(postHeader.value.trim() && postContent.value.trim()) {
+            submitBtn.disabled = false
+        } else {
+            submitBtn.disabled = true
+        }
+    }
+
     const createPostData = {}
     const createPostForm = document.getElementById("createPost")
 
     createPostForm.addEventListener("submit", async (event) => {
         event.preventDefault()
+        if(postHeader.value.trim() && postContent.value.trim()) {
+            var formData = new FormData(createPostForm)
+            createPostData["creatorId"] = userData.userId
 
-        var formData = new FormData(createPostForm)
-        createPostData["creatorId"] = userData.userId
+            for (var [key, value] of formData.entries()) {
+                if(key === "postHeader") {
+                    value = value.trim()
+                }
+                createPostData[key] = value
+            }
 
-        for (var [key, value] of formData.entries()) {
-            createPostData[key] = value
-        }
-
-        const options = {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(createPostData)
-        }
-        try {
-            const response = await fetch("/create-post", options)
-            handleDefaultResponse(response)
-        } catch (error) {
-            console.error(error)
+            const options = {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(createPostData)
+            }
+            try {
+                const response = await fetch("/create-post", options)
+                handleDefaultResponse(response)
+            } catch (error) {
+                console.error(error)
+            }
         }
     })
 }
@@ -170,11 +195,11 @@ const addHomePageHtml = (userData) => {
                 <h1 style="font-size: 50px;">Posts</h1>
                 <form id="createPost">
                     <div style="display: flex;">
-                        <input class="createPostHeaderAndTags" name="postHeader" type="text" placeholder="Post header" required>
+                        <input class="createPostHeaderAndTags" name="postHeader" id="postHeader" type="text" placeholder="Post header">
                         <input class="createPostHeaderAndTags" name="categories" type="text" placeholder="Optional categories, separate each one with #"><br>
                     </div><br>
-                    <textarea class="createPostContent" name="postContent" placeholder="Post content" required></textarea><br><br>
-                    <button class="button-33" type="submit">Submit post</button>
+                    <textarea class="createPostContent" name="postContent" id="postContent" placeholder="Post content"></textarea><br><br>
+                    <button id="submitBtn" class="button-33" type="submit">Submit post</button>
                 </form>
                 <br><br><br>
                 <select id="categorySelect" name="categorySelect" class="catSelect">

@@ -124,7 +124,7 @@ const addAgeCheck = () => {
     })
 }
 
-const isValid = (formEntries) => {
+export const isValid = (formEntries) => {
     var isValid = true
     for (var [key, value] of formEntries) {
         if(!value) {
