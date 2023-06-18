@@ -141,12 +141,11 @@ const updateMessages = (messages) => {
 
         if(!prevMsgType || prevMsgType != msgType || timePassed(prevMsg, message) > 900000) {
             chatBox.innerHTML += `
-                <div id="nicknameBox">
+                <div id="nicknameBox" class="nicknameBox${msgType}">
                     <a>${msgType === "Received" ? otherChatterNickname : userNickname}</a>
                 </div>
             `
         }
-
 
 
         chatBox.innerHTML += `
@@ -265,9 +264,12 @@ const addChatbarHtml = async (users) => {
         }
 
         chatDiv.innerHTML += `
-            <div class="userBox" >
-                <h1>${user.nickname}${user.online ? "🟢" : ""}</h1>
+            <div class="userBox">
                 <header>${lastMsgText}</header><br>
+                <div class="messageContainer" style="justify-content: center;">
+                    <div class="statusIndicator" style="background: ${user.online ? 'green' : 'grey'}; width: 30px; height: 30px;"></div>
+                    <h1 style="margin-right: 5px;">${user.nickname}</h1>
+                </div>
                 <a class="button-33" style="width: 30%;" href="/chat?id=${user.userId}" data-link>Chat</a>
                 <a class="button-33" style="width: 30%;" href="/user?id=${user.userId}" data-link>Profile</a><br><br>
             </div>
@@ -278,14 +280,14 @@ const addChatbarHtml = async (users) => {
 const addChatpageHtml = (nickname, userData) => {
     document.querySelector("#app").innerHTML = `
             <div class="header">
-                <div>
+                <div style="direction: rtl">
                     <a>Welcome to the Forum, </a>
                     <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
                 </div>
                 <div class="headerBtnsContainer">
-                    <a class="button-33" href="/logout" data-link>Log out</a> 
-                    <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
                     <button id="chatBtn" style="height: fit-content;" class="button-33"></button>
+                    <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
+                    <a class="button-33" href="/logout" data-link>Log out</a>
                 </div>
             </div>
             <div style="text-align: center;">

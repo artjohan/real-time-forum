@@ -144,14 +144,14 @@ export const addCommentHtml = (comment, contentDivId) => {
 const addToolbarAndPostHtml = (userData, allInfo) => {
     document.querySelector("#app").innerHTML = `
         <div class="header">
-            <div>
+            <div style="direction: rtl;">
                 <a>Welcome to the Forum, </a>
                 <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
             </div>
             <div class="headerBtnsContainer">
-                <a class="button-33" href="/logout" data-link>Log out</a> 
+                <button id="chatBtn" style="height: fit-content; width: 145px;" class="button-33"></button>
                 <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
-                <button id="chatBtn" style="height: fit-content;" class="button-33"></button>
+                <a class="button-33" style="width: 105px;" href="/logout" data-link>Log out</a>
             </div>
         </div>
         <div style="text-align: center; overflow-wrap: break-word;">

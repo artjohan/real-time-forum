@@ -219,9 +219,15 @@ body {
     overflow-y: scroll;
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     height: 100%;
     width: 25%;
+}
+
+.statusIndicator {
+    width: 45px;
+    height: 45px;
+    border-radius: 1000px;
 }
 
 .userBox {
@@ -272,6 +278,34 @@ body {
     order: 1;
     text-align: left;
     overflow-wrap: break-word;
+}
+
+.nicknameBoxSent {
+    text-align: right;
+    margin-right: 20px;
+    margin-bottom: 5px;
+    font-size: 25px;
+    color: grey;
+}
+
+.titleText {
+    white-space: pre-wrap;
+    font-size: 30px; 
+    font-weight: bold; 
+    text-decoration: none;
+    color: rgb(32, 31, 31);
+}
+
+.titleText:visited {
+    color: #4d4d4d;
+}
+
+.nicknameBoxReceived {
+    text-align: left;
+    margin-left: 20px;
+    margin-bottom: 5px;
+    font-size: 25px;
+    color: grey;
 }
 
 .timeBoxSent {

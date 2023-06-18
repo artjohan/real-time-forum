@@ -191,18 +191,21 @@ const handlePostReactions = (userData) => {
 const addUserPageHtml = (userData, viewedUserData, viewedUserId) => {
     document.querySelector("#app").innerHTML = `
         <div class="header">
-            <div>
+            <div style="diretion: rtl">
                 <a>Welcome to the Forum, </a>
                 <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
             </div>
             <div class="headerBtnsContainer">
-                <a class="button-33" href="/logout" data-link>Log out</a> 
-                <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
                 <button id="chatBtn" style="height: fit-content;" class="button-33"></button>
+                <a style="font-size: 65px;  text-decoration: none;" href="/" data-link>🏠</a>
+                <a class="button-33" href="/logout" data-link>Log out</a> 
             </div>
         </div>
         <div style="text-align: center;">
-            <h1 style="font-size: 50px;">${viewedUserData.nickname}${viewedUserData.online ? "🟢" : ""}</h1>
+            <div class="messageContainer" style="justify-content: center;">
+                <h1 style="font-size: 50px; padding-right: 10px;">${viewedUserData.nickname}</h1>
+                <div class="statusIndicator" style="background: ${viewedUserData.online ? 'green' : 'grey'}"></div>
+            </div>
             <p>Age: ${viewedUserData.age}</p>
             <p>Gender: ${viewedUserData.gender}</p>
             <p>First name: ${viewedUserData.firstName}</p>
