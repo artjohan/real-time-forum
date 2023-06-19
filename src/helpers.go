@@ -78,6 +78,7 @@ func getChatData(currentChatterId, otherChatterId, amount int) ReturnChatDataEve
 	if err != nil {
 		log.Println(err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var messageData ReturnMessageEvent
@@ -97,6 +98,7 @@ func getChatbarData(currentUserId int) []UserDataEvent {
 	if err != nil {
 		log.Println(err)
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var userData UserDataEvent

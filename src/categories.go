@@ -26,6 +26,7 @@ func CategoryFilterHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
+	defer rows.Close()
 
 	var posts []GetPostInfo
 	for rows.Next() {
@@ -60,6 +61,7 @@ func AllCategoriesHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+	defer rows.Close()
 
 	var resSlc []string
 	var category string

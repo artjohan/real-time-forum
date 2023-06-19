@@ -94,6 +94,7 @@ func createCategories(categories string) {
 // gets the categories for each post
 func getCategories(postId int) []string {
 	rows, _ := sqldb.DB.Query("SELECT categoryName FROM categories WHERE postId=?", postId)
+	defer rows.Close()
 	var resSlc []string
 	var category string
 	for rows.Next() {
@@ -108,6 +109,7 @@ func getPostsByQuery(query, currentUserId string) []GetPostInfo {
 	if err != nil {
 		log.Println(err)
 	}
+	defer rows.Close()
 
 	var posts []GetPostInfo
 	for rows.Next() {

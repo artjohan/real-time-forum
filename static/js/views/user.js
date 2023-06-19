@@ -191,7 +191,7 @@ const handlePostReactions = (userData) => {
 const addUserPageHtml = (userData, viewedUserData, viewedUserId) => {
     document.querySelector("#app").innerHTML = `
         <div class="header">
-            <div style="diretion: rtl">
+            <div style="direction: rtl">
                 <a>Welcome to the Forum, </a>
                 <a href="/user?id=${userData.userId}" data-link>${userData.nickname}</a>
             </div>

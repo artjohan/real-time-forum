@@ -131,10 +131,10 @@ func UpdateChatbarData(event Event, c *Client) error {
 	}
 	fmt.Println(msg)
 
-	return broadCastUpdate(c)
+	return broadcastUpdate(c)
 }
 
-func broadCastUpdate(c *Client) error {
+func broadcastUpdate(c *Client) error {
 	for client := range c.manager.clients {
 		data, err := json.Marshal(getChatbarData(client.userId))
 		if err != nil {
@@ -154,7 +154,7 @@ func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Println(err, "18")
 		return
 	}
 
@@ -166,16 +166,24 @@ func (m *Manager) ServeWS(w http.ResponseWriter, r *http.Request) {
 	// start client processes
 	go client.readMessages()
 	go client.writeMessages()
-
-	broadCastUpdate(client)
 }
 
 func (m *Manager) addClient(client *Client) {
 	m.Lock()
 	defer m.Unlock()
 
-	updateUserStatus(true, client.userId)
+	timer := time.NewTimer(3 * time.Second)
+
+	go func() {
+		<-timer.C
+		if m.isClientOnline(client.userId) {
+			updateUserStatus(true, client.userId)
+			broadcastUpdate(client)
+		}
+	}()
+
 	m.clients[client] = true
+
 }
 
 func (m *Manager) removeClient(client *Client) {
@@ -183,9 +191,31 @@ func (m *Manager) removeClient(client *Client) {
 	defer m.Unlock()
 
 	if _, ok := m.clients[client]; ok {
+
+		timer := time.NewTimer(3 * time.Second)
+
+		go func() {
+			<-timer.C
+			if !m.isClientOnline(client.userId) {
+				updateUserStatus(false, client.userId)
+				broadcastUpdate(client)
+			}
+		}()
+
 		client.connection.Close()
-		updateUserStatus(false, client.userId)
-		broadCastUpdate(client)
 		delete(m.clients, client)
 	}
+}
+
+func (m *Manager) isClientOnline(userId int) bool {
+	m.Lock()
+	defer m.Unlock()
+
+	for client, _ := range m.clients {
+		if client.userId == userId {
+			return true
+		}
+	}
+
+	return false
 }

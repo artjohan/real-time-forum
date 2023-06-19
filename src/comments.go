@@ -86,6 +86,7 @@ func getCommentsByQuery(query, userId string) []CommentInfo {
 	if err != nil {
 		log.Println(err, "here3")
 	}
+	defer rows.Close()
 
 	var comments []CommentInfo
 	for rows.Next() {
