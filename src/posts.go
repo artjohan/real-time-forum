@@ -74,7 +74,6 @@ func GetPostsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-// creates the categories if they exist
 func createCategories(categories string) {
 	if categories != "" {
 		catSlc := removeDuplicateStr(strings.Split(strings.ReplaceAll(strings.ToUpper(categories), " ", ""), "#"))
@@ -91,7 +90,6 @@ func createCategories(categories string) {
 	}
 }
 
-// gets the categories for each post
 func getCategories(postId int) []string {
 	rows, _ := sqldb.DB.Query("SELECT categoryName FROM categories WHERE postId=?", postId)
 	defer rows.Close()

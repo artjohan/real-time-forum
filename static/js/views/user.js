@@ -222,6 +222,7 @@ const addUserPageHtml = (userData, viewedUserData, viewedUserId) => {
             <li class="option" id="disliked-comments">Disliked Comments</li>
         </ul>
         <div id="selectContent"></div>
+        <div id="snackbar"></div>
     `
     
     if(viewedUserId != userData.userId) {

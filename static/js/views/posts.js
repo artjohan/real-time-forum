@@ -180,5 +180,6 @@ const addToolbarAndPostHtml = (userData, allInfo) => {
                 <button id="submitBtn" class="button-33" type="submit">Submit comment</button>
             </form>
         </div>
+        <div id="snackbar"></div>
     `
 }

@@ -167,3 +167,13 @@ func resetUserStatuses() {
 		return
 	}
 }
+
+func hasSession(userId int) bool {
+	var exists bool
+	err := sqldb.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM sessions WHERE userId = ?)", userId).Scan(&exists)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return exists
+}

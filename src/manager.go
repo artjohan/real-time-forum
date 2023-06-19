@@ -176,7 +176,7 @@ func (m *Manager) addClient(client *Client) {
 
 	go func() {
 		<-timer.C
-		if m.isClientOnline(client.userId) {
+		if m.isClientOnline(client.userId) && hasSession(client.userId){
 			updateUserStatus(true, client.userId)
 			broadcastUpdate(client)
 		}
