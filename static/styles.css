@@ -231,6 +231,7 @@ body {
 }
 
 .userBox {
+    direction: ltr;
     border: 3px black solid;
     border-radius: 10px;
     text-align: center;
@@ -289,7 +290,6 @@ body {
 }
 
 .titleText {
-    white-space: pre-wrap;
     font-size: 30px; 
     font-weight: bold; 
     text-decoration: none;

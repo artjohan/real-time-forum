@@ -265,11 +265,11 @@ const addChatbarHtml = async (users) => {
 
         chatDiv.innerHTML += `
             <div class="userBox">
-                <header>${lastMsgText}</header><br>
                 <div class="messageContainer" style="justify-content: center;">
-                    <div class="statusIndicator" style="background: ${user.online ? 'green' : 'grey'}; width: 30px; height: 30px;"></div>
                     <h1 style="margin-right: 5px;">${user.nickname}</h1>
+                    <div class="statusIndicator" style="background: ${user.online ? 'green' : 'grey'}; width: 30px; height: 30px;"></div>
                 </div>
+                <header>${lastMsgText}</header><br>
                 <a class="button-33" style="width: 30%;" href="/chat?id=${user.userId}" data-link>Chat</a>
                 <a class="button-33" style="width: 30%;" href="/user?id=${user.userId}" data-link>Profile</a><br><br>
             </div>

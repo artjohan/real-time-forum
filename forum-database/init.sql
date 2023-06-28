@@ -68,3 +68,8 @@ CREATE TABLE IF NOT EXISTS messages (
     FOREIGN KEY (senderId) REFERENCES users (userId),
     FOREIGN KEY (receiverId) REFERENCES users (userId)
 );
+
+INSERT INTO users (nickname, email, firstName, lastName, age, gender, password) VALUES 
+('helloworld', 'hello@gmail.com', 'Hello', 'World', '25', 'Male', 'password123'),
+('testing', 'testing@gmail.com', 'Test', 'Ing', '32', 'Female', 'safepassword'),
+('johndoe', 'johndoe@gmail.com', 'John', 'Doe', '18', 'Male', 'guest123');
