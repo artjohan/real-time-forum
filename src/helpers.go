@@ -94,7 +94,7 @@ func getChatData(currentChatterId, otherChatterId, amount int) ReturnChatDataEve
 func getChatbarData(currentUserId int) []UserDataEvent {
 	var userDataSlc []UserDataEvent
 
-	rows, err := sqldb.DB.Query(`SELECT userId, nickname, online FROM users WHERE userId != ? ORDER BY nickname ASC`, currentUserId)
+	rows, err := sqldb.DB.Query(`SELECT userId, nickname, online FROM users WHERE userId != ? ORDER BY nickname COLLATE NOCASE ASC`, currentUserId)
 	if err != nil {
 		log.Println(err)
 	}
