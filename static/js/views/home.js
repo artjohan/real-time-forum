@@ -150,7 +150,6 @@ export const addChatboxListener = () => {
     })
 }
 
-
 export const addPostHtml = (post, contentDivId) => {
     document.querySelector(`#${contentDivId}`).innerHTML += `
         <div class="threadbox">
@@ -159,8 +158,8 @@ export const addPostHtml = (post, contentDivId) => {
             </div>
             <div id="categoriesOfPost${post.postId}" class="threadcats"></div>
             <div class="threadinfo">
-                <a>Started by </a>
-                <a href="/user?id=${post.creatorId}" data-link>${post.creatorNickname}</a>
+                <a>Created by </a>
+                <a href="/user?id=${post.creatorId}" data-link>${post.creatorNickname}</a><br>
                 <a>on</a>
                 <a>${post.creationDate}</a><br>
             </div>
